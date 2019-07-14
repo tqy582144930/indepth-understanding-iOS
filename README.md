@@ -1,2 +1,2 @@
 # indepth-understanding-iOS
-- MRC与ARC
+- 内存管理与MRC与ARC
