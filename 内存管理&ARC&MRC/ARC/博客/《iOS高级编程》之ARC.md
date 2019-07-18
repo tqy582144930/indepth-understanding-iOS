@@ -215,4 +215,170 @@ obj2 = nil;
 
 ### __unsafe_unretained修饰符
 
-- 附有__unsafe_unretained修饰符的变量不属于编译器的内存管理对象
+- 附有__unsafe_unretained修饰符的变量不属于编译器的内存管理，附有unsafe修饰符的变量同附有weak的修饰符变量一样，因为自己生成并持有的对象不能被自己持有，所以生成的对象会立马释放。看起来unsafe和weak是一样的，让我们来看看unsafe的源码
+
+  ```objective-c
+  id __unsafe_unretained obj1 = nil;
+  {
+    //自己生成并持有对象
+    id __strong obj0 = [[NSObject alloc] init];
+    
+    //因为obj0变量的强引用，所以自己持有对象
+    
+    obj1 = obj0;
+    //虽然obj0变量赋值给obj1，但是obj1变量既不持有对象的强引用也不持有弱引用
+  }
+  
+  //因为obj0变量超出了其作用域，强引用失效，所以自动释放自己持有的对象，因为对象无持有者，所以对象被废弃
+  NSLog(@"%@", obj1);
+  //因为obj1变量表示的对象已经被废弃（悬垂指针）错误访问！！！！！！
+  ```
+
+  - 虽然访问了已经废弃的对象，但是应用程序在个别运行状况下会崩溃
+
+### __autoreleasing修饰符
+
+#### ARC有效修饰符和ARC无效方法比较
+
+- ARC有效时，不能使用autoreleasing方法，另外，也不能使用NSAutoreleasePool类。
+
+  ```objective-c
+  //在ARC无效时
+  
+  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+  id obj = [[NSObject alloc] init];
+  [obj autorelease];
+  [pool drain];
+  
+  //ARC有效时
+  @autoreleasepool {
+    id __autoreleasing obj = [[NSObject alloc] init];
+  }
+  ```
+
+  - 指定@autoreleasepool块代替”NSAutoreleasePool类对象生成、持有以及废弃"
+  - 附有__autoreleasing修饰符的变量替代autorelease方法
+
+#### 非显示使用__autoreleasing修饰符
+
+##### 通过方法名使用
+
+- 编译器会检查方法名是否以alloc/new/copy/mutableCopy开始，如果不是则自动将返回值的对象注册到autoreleasepool中
+  - init方法返回值的对象不注册到autoreleasepool
+
+  ```objective-c
+  @autoreleasepool {
+  	id __strong obj = [NSMutable array];
+  }
+  
+  //对象持有分析
+  @autoreleasepool {
+    //取得非自己生成并持有的对象
+    id __strong obj = [NSMutable array];
+    //因为变量obj为强引用，所以自己持有对象，并且该对象由编译器判断其方法名后自动注册到autoreleasepool中
+  }
+  //因为变量obj超出其作用域，强引用失效
+  //所以自动释放自己持有的对象
+  
+  //同时，随着@autoreleasepool块的结束，注册到autoreleasepool中的所有对象自动被释放
+  //因为对象的所有者不存在，所以废弃对象
+  ```
+
+  - 像这样不使用__autoreleasing修饰符也能把对象注册到auto release pool，以下为非自己生成并持有对象时源码示例
+
+  ```objective-c
+  + (id)array {
+    id obj = [[NSMutable alloc] init];
+    return obj;
+  }
+  
+  //因为没有显示指定所有权修饰符，所以id obj同附有__strong修饰符的id __strong obj是完全一样的。由于return使得对象变量超出其作用域，所以该强引用对应自己持有的对象会被自动释放，但该对象作为函数的返回值，编译器会自动将其注册到autoreleasepool中
+  ```
+
+##### 访问附有__weak修饰变量时
+
+- 虽然__weak修饰符实为了避免循环引用而使用的，但在访问附有weak修饰符的变量时，实际上必定要访问注册到autoreleasepool的对象
+
+  ```objective-c
+  id __weak obj1 = obj0;
+  
+  //在源码中
+  id __weak obj1 = obj0;
+  id __autoreleaseing tmp = obj1;
+  
+  //为什么访问附有__weak修饰符的变量时必须访问注册到aotoreleasepool的对象呢？这是因为__weak修饰符只持有对象的弱引用，而在访问引用对象的过程中，该对象有可能被废弃。如果要把访问的对象注册到autoreleasepool中，那么在@autoreleasepool块结束前都能确保该对象存在。
+  ```
+
+  #### id的指针id *obj类型
+
+  ```objective-c
+  //同前面讲述的id obj和id __strong obj 完全一样，那么id指针id *obj可以由id __strong *obj的例子推出吗？其实，推出来的是id __autoreleasing *obj
+  //同样，对象的指针NSObject **obj便成为了NSObject *__autoreleasing *obj
+  ```
+  
+  - 作为alloc/new/copy/mutableCopy方法返回值取得的对象是自己生成并持有的，其他情况下便是取得非自己生成并持有的对象。使用附有__autoreleasing修饰符的变量作为对象取得参数，与除alloc/new/copy/mutableCopy外其他方法的返回值取得对象完全一样，都会注册到autoreleasepool，并取得非自己生成并持有的对象。
+  
+- 赋值给对象指针时，所有权修饰符必须一致
+
+  ```objective-c
+  //这种形式时错误的
+  NSError *error = nil;
+  NSError **pError = &error;
+  //因为error默认的修饰符是__strong,而pError默认的修饰符__autoreleaseing，所以会发生错误
+  
+  //所以赋值给对象指针，所有权修饰符必须一致
+  //就像下面这种
+  NSError *error = nil;
+  NSError *__strong *pErroe = &error;
+  ```
+
+#### @autoreleasepool
+
+- 在ARC无效时，可以将NSAutoreleasePool对象嵌套使用，同样的，@autoreleasepool块也能够嵌套使用
+- 推荐不管ARC是否有效，都可以使用@autoreleasepool块
+
+## ARC规则
+
+- 不能使用retain/release/retainCount/autorelease
+- 不能使用NSAllocateObject/NSDeallocateObject
+- 须遵守内存管理的方法命名规则
+- 不要显示调用dealloc
+- 使用@autoreleasepool块代替NSAutoreleasePool类
+- 不能使用区域（NSZone）
+- 对象型变量不能作为c语言结构体成员
+- 显示转换id和void *
+
+####  init方法
+
+- 以init开始的方法都必须是实例方法，并且必须要返回对象，返回对象应为id类型或该方法声明类的对象类型，该返回对象并不注册到autoreleasepool上，基本上只是对alloc方法返回值的对象进行初始化处理并返回该对象。
+
+#### 显示转换id和void*
+
+- id型或对象型变量赋值给void*后者逆向赋值时都需要进行特定的转换。如果只想**单纯地赋值**，则可以使用"__bridge转换"
+
+  ```objective-c
+  id obj = [[NSObject alloc] init];
+  
+  void *p = (__bridge void *)obj;
+  
+  id o = (__bridge id)p;
+  
+  //但是转换为void*的__bridge转换，其安全性与赋值给__unsafe_unretained修饰符相近，甚至会更低。如果管理时不注意赋值对象的所有者，就会因悬垂指针而导致程序崩溃
+  ```
+
+  1. __bridge_retained转换
+
+     ```objective-c
+     id obj = [[NSObject alloc] init];
+     void *p = (__bridge_retained void *)obj;
+     
+     //__bridge_retained转换可使要转换赋值的变量也持有赋值的对象
+     ```
+
+  2. __bridge_transfer转换
+
+     ```objective-c
+     id obj = (__bridge_transfer id)p;
+     
+     //__bridge_transfer被转换的变量所持有的对象在该变量被赋值给转换目标变量后随之释放
+     ```
