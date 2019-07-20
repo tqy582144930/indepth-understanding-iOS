@@ -1120,7 +1120,7 @@ public:
     }
 };
 
-
+// objc_class真实定义
 // objc_class继承于objc_object,因此
 // objc_class中也有isa结构体
 // 存储的是描述对象的相关信息
