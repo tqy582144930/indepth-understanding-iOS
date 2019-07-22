@@ -120,7 +120,7 @@ obj2 = nil;
 
 - 通过上面发现，__strong修饰符的变量，不仅只在变量作用域中，在赋值上也能够正确的管理其对象的所有者
 
-- 注意_strong修饰符和后面__weak修饰符和__autoreleasing修饰符一样，可以保证将附有这些修饰符的自动变量初始化为nil。
+- 注意__strong修饰符和后面_weak修饰符和__autoreleasing修饰符一样，可以保证将附有这些修饰符的自动变量初始化为nil。
 
   ```objective-c
   id __strong obj0;
@@ -284,7 +284,7 @@ obj2 = nil;
   //因为对象的所有者不存在，所以废弃对象
   ```
 
-  - 像这样不使用__autoreleasing修饰符也能把对象注册到auto release pool，以下为非自己生成并持有对象时源码示例
+  - 像这样不使用__autoreleasing修饰符也能把对象注册到autoreleasepool，以下为非自己生成并持有对象时源码示例
 
   ```objective-c
   + (id)array {

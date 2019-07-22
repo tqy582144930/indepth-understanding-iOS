@@ -6,7 +6,7 @@
 
 ## 思考方式
 
-- 想要了解他的方式，你需要牢记一下几句话
+- 想要了解他的方式，你需要牢记以下几句话
   - 自己生成的对象，自己持有。
   - 非自己生成的对象，自己也能持有。
   - 不再需要自己持有的对象时释放。
@@ -200,16 +200,21 @@ NSAllocateObject (Clasee aClass, NSUInterger extraBytes, NSZone *zone) {
   ```
 
   ```objective-c
+  
+  ```
 - (NSUInteger) retainCount
   {
       return NSExtraRefCount(self) + 1;
   }
-   
+  
   inline NSUInteger
   NSExtraRefCount(id anObject)
   {
       return ((struct obj_layout *) anObject)[-1].retained;	//先找到对象内存头部，然后减去一个struct obj_layout的大小，然后就能获取到引用计数的地址，然后获取到retained的值。由于分配内存时为0，所以在返回值时需要+1；
   }
+  
+  ```
+  
   ```
 
 ### retain
