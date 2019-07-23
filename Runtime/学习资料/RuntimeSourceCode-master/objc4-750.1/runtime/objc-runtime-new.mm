@@ -368,10 +368,12 @@ static class_ro_t *make_ro_writeable(class_rw_t *rw)
 * Returns the class => categories map of unattached categories.
 * Locking: runtimeLock must be held by the caller.
 **********************************************************************/
+//获取未添加到Class中的catrgory哈希表
 static NXMapTable *unattachedCategories(void)
 {
     runtimeLock.assertLocked();
 
+    //未添加到class中的categoryl哈希表
     static NXMapTable *category_map = nil;
 
     if (category_map) return category_map;
@@ -521,15 +523,18 @@ static void checkIsKnownClass(Class cls)
 * Records an unattached category.
 * Locking: runtimeLock must be held by the caller.
 **********************************************************************/
+//将category_t添加到list中，并通过NXMapInsert函数，更新所属类的Catrgory列表
 static void addUnattachedCategoryForClass(category_t *cat, Class cls, 
                                           header_info *catHeader)
 {
     runtimeLock.assertLocked();
 
     // DO NOT use cat->cls! cls may be cat->cls->isa instead
+    // 获取到未添加的Category哈希表
     NXMapTable *cats = unattachedCategories();
     category_list *list;
 
+    // 获取到buckets中的value，并向value对应的数组中添加category_t
     list = (category_list *)NXMapGet(cats, cls);
     if (!list) {
         list = (category_list *)
@@ -538,6 +543,7 @@ static void addUnattachedCategoryForClass(category_t *cat, Class cls,
         list = (category_list *)
             realloc(list, sizeof(*list) + sizeof(list->list[0]) * (list->count + 1));
     }
+    // 替换之前的list字段
     list->list[list->count++] = (locstamped_category_t){cat, catHeader};
     NXMapInsert(cats, cls, list);
 }
@@ -905,6 +911,7 @@ static void methodizeClass(Class cls)
 * Updates method caches for cls and its subclasses.
 * Locking: runtimeLock must be held by the caller
 **********************************************************************/
+//将Category的信息添加到Class，包含method、property、protocol
 static void remethodizeClass(Class cls)
 {
     category_list *cats;
@@ -915,12 +922,14 @@ static void remethodizeClass(Class cls)
     isMeta = cls->isMetaClass();
 
     // Re-methodizing: check for more categories
+    // 从Category哈希表中查找category_t对象，并将已找到的对象从哈希表中删除
     if ((cats = unattachedCategoriesForClass(cls, false/*not realizing*/))) {
         if (PrintConnecting) {
             _objc_inform("CLASS: attaching categories to class '%s' %s", 
                          cls->nameForLogging(), isMeta ? "(meta)" : "");
         }
         
+        //在attachCategories函数中，查找到Category的方法列表、属性列表、协议列表
         attachCategories(cls, cats, true /*flush caches*/);        
         free(cats);
     }
@@ -2726,12 +2735,14 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
 
     ts.log("IMAGE TIMES: realize future classes");
 
-    // Discover categories. 
+    // Discover categories.
+    //外部循环遍历所有类，并取出当前类对应的catrgory数组
     for (EACH_HEADER) {
         category_t **catlist = 
-            _getObjc2CategoryList(hi, &count);
+            _getObjc2CategoryList(hi, &count);//编译器为我们准备的category_t数组
         bool hasClassProperties = hi->info()->hasCategoryClassProperties();
-
+        
+        //内部循环会遍历取出catrgory数组，将每个category_t对象取出，最终执行addUnattachedCategoryForClass函数添加到Category哈希表中
         for (i = 0; i < count; i++) {
             category_t *cat = catlist[i];
             Class cls = remapClass(cat->cls);
@@ -2756,9 +2767,9 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
             if (cat->instanceMethods ||  cat->protocols  
                 ||  cat->instanceProperties) 
             {
-                addUnattachedCategoryForClass(cat, cls, hi);
+                addUnattachedCategoryForClass(cat, cls, hi);//只是把类和catrgory做一个关联映射
                 if (cls->isRealized()) {
-                    remethodizeClass(cls);
+                    remethodizeClass(cls);//真正处理添加事宜
                     classExists = YES;
                 }
                 if (PrintConnecting) {

@@ -1400,12 +1400,12 @@ struct swift_class_t : objc_class {
 
 
 struct category_t {
-    const char *name;
-    classref_t cls;
-    struct method_list_t *instanceMethods;
-    struct method_list_t *classMethods;
-    struct protocol_list_t *protocols;
-    struct property_list_t *instanceProperties;
+    const char *name;//类的名字
+    classref_t cls;//类
+    struct method_list_t *instanceMethods;//category中所有给类添加的实例方法的列表
+    struct method_list_t *classMethods;//category中所有添加的类方法的列表
+    struct protocol_list_t *protocols;//category实现的所有协议的列表
+    struct property_list_t *instanceProperties;//category中添加的所有属性
     // Fields below this point are not always present on disk.
     struct property_list_t *_classProperties;
 
