@@ -768,6 +768,8 @@ prepareMethodLists(Class cls, method_list_t **addedLists, int addedCount,
 // 将category中的属性、协议、方法添加到类中
 // 既然可以添加category中的属性，为何不设计成可以添加实例变量？
 // category不能添加实例变量，那在category中添加属性的意义又是什么？
+
+//获取到catrgory的Protocol list、Property list、Method list，然后通过attachLists函数添加到所属的类中
 static void 
 attachCategories(Class cls, category_list *cats, bool flush_caches)
 {
@@ -777,6 +779,7 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
     bool isMeta = cls->isMetaClass();
 
     // fixme rearrange to remove these intermediate allocations
+    //按照Category个数，分配对应的内存空间
     method_list_t **mlists = (method_list_t **)
         malloc(cats->count * sizeof(*mlists));
     property_list_t **proplists = (property_list_t **)
@@ -790,6 +793,8 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
     int protocount = 0;
     int i = cats->count;
     bool fromBundle = NO;
+    
+    // 循环查找出Protocol list、Property list、Method list
     while (i--) {
         auto& entry = cats->list[i];
 
@@ -813,6 +818,7 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
 
     auto rw = cls->data();
 
+    //执行添加操作
     prepareMethodLists(cls, mlists, mcount, NO, fromBundle);
     rw->methods.attachLists(mlists, mcount);
     free(mlists);
