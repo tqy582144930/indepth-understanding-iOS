@@ -2180,10 +2180,12 @@ void arr_init(void)
     return object_getMethodImplementation(self, sel);
 }
 
+//对应类方法
 + (BOOL)resolveClassMethod:(SEL)sel {
     return NO;
 }
 
+//对应实例方法
 + (BOOL)resolveInstanceMethod:(SEL)sel {
     return NO;
 }
