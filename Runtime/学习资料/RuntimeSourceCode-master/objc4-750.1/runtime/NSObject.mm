@@ -2246,7 +2246,7 @@ void arr_init(void)
                 "not available without CoreFoundation");
 }
 
-// Replaced by CF (returns an NSMethodSignature)
+//  Replaced by CF (returns an NSMethodSignature)
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)sel {
     _objc_fatal("-[NSObject methodSignatureForSelector:] "
                 "not available without CoreFoundation");
