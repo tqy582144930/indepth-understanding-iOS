@@ -16,6 +16,7 @@
 		4F76435022EFDAD3008C7DE1 /* KVC_testTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F76434F22EFDAD3008C7DE1 /* KVC_testTests.m */; };
 		4F76435B22EFDAD3008C7DE1 /* KVC_testUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F76435A22EFDAD3008C7DE1 /* KVC_testUITests.m */; };
 		4F76436A22EFE026008C7DE1 /* PersonModel.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F76436922EFE026008C7DE1 /* PersonModel.m */; };
+		4F76436D22F07C21008C7DE1 /* Transaction.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F76436C22F07C21008C7DE1 /* Transaction.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,6 +55,8 @@
 		4F76435C22EFDAD3008C7DE1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4F76436822EFE026008C7DE1 /* PersonModel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PersonModel.h; sourceTree = "<group>"; };
 		4F76436922EFE026008C7DE1 /* PersonModel.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PersonModel.m; sourceTree = "<group>"; };
+		4F76436B22F07C21008C7DE1 /* Transaction.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Transaction.h; sourceTree = "<group>"; };
+		4F76436C22F07C21008C7DE1 /* Transaction.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Transaction.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,6 +118,8 @@
 				4F76434522EFDAD3008C7DE1 /* main.m */,
 				4F76436822EFE026008C7DE1 /* PersonModel.h */,
 				4F76436922EFE026008C7DE1 /* PersonModel.m */,
+				4F76436B22F07C21008C7DE1 /* Transaction.h */,
+				4F76436C22F07C21008C7DE1 /* Transaction.m */,
 			);
 			path = "KVC-test";
 			sourceTree = "<group>";
@@ -270,6 +275,7 @@
 				4F76436A22EFE026008C7DE1 /* PersonModel.m in Sources */,
 				4F76433B22EFDAD2008C7DE1 /* ViewController.m in Sources */,
 				4F76434622EFDAD3008C7DE1 /* main.m in Sources */,
+				4F76436D22F07C21008C7DE1 /* Transaction.m in Sources */,
 				4F76433822EFDAD2008C7DE1 /* AppDelegate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
