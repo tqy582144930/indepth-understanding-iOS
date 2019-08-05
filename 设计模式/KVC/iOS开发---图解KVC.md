@@ -112,45 +112,55 @@
   @property (nonatomic, copy) NSString *other;
   @end
     
-      PersonModel *person = [[PersonModel alloc] init];
-      //1.这是直接赋值，数据量小会很简单，但是数据量一多就很麻烦，就像我们进行网络请求时
-      person.key1 = dictionary[@"key1"];
-      person.key2 = dictionary[@"key2"];
-      person.key3 = dictionary[@"key3"];
-      
-      //2.通过下面该方法可以批量赋值
-      //2.1如果model里面的string不存在于dictionary中，输出结果为null；
-      [person setValuesForKeysWithDictionary:dictionary];
-      NSLog(@"\n%@\n%@\n%@\n%@\n", person.key1,person.key2,person.key3,person.other);
+  PersonModel *person = [[PersonModel alloc] init];
+  //1.这是直接赋值，数据量小会很简单，但是数据量一多就很麻烦，就像我们进行网络请求时
+  person.key1 = dictionary[@"key1"];
+  person.key2 = dictionary[@"key2"];
+  person.key3 = dictionary[@"key3"];
   
-  		//输出结果
-  		test1
-  		test2
-  		test3
-  		(null)
-        
-      //2.2如果dictionary中有的元素，moedl中没有运行会直接出错，那么我们应该怎么解决？
-      //我们需要实现setValue:forUndefinedKey:这个方法能过滤掉不存在的键值
-      -(void)setValue:(id)value forUndefinedKey:(NSString *)key{
-      //这里我们不需要写任何内容
-      }
-      person.key1 = dictionary[@"key1"];
-      person.key2 = dictionary[@"key2"];
-      person.key3 = dictionary[@"key3"];
-      [person setValuesForKeysWithDictionary:dictionary];
-      NSLog(@"\n%@\n%@\n%@\n", person.key1,person.key2,person.key3);
+  //2.通过下面该方法可以批量赋值
+  //2.1如果model里面的string不存在于dictionary中，输出结果为null；
+  [person setValuesForKeysWithDictionary:dictionary];
+  NSLog(@"\n%@\n%@\n%@\n%@\n", person.key1,person.key2,person.key3,person.other);
   
-  		//2.3如果dictionar中的key与model中的变量名字不同，怎么赋值？
-      //还是从setValue:forUndefinedKey:这个方法入手
-     	-(void)setValue:(id)value forUndefinedKey:(NSString *)key{
-      	if ([key isEqualToString:@"key2"]) {
-          self.id = value;
-      }
-      person.key1 = dictionary[@"key1"];
-      person.id = dictionary[@"key2"];
-      person.key3 = dictionary[@"key3"];
-      [person setValuesForKeysWithDictionary:dictionary];
-      NSLog(@"\n%@\n%@\n%@\n", person.key1,person.id,person.key3);
+  //输出结果
+  test1
+  test2
+  test3
+  (null)
+  
+  //2.2如果dictionary中有的元素，moedl中没有运行会直接出错，那么我们应该怎么解决？
+  //我们需要实现setValue:forUndefinedKey:这个方法能过滤掉不存在的键值
+  -(void)setValue:(id)value forUndefinedKey:(NSString *)key{
+    //这里我们不需要写任何内容
+  }
+  person.key1 = dictionary[@"key1"];
+  person.key2 = dictionary[@"key2"];
+  person.key3 = dictionary[@"key3"];
+  [person setValuesForKeysWithDictionary:dictionary];
+  NSLog(@"\n%@\n%@\n%@\n", person.key1,person.key2,person.key3);
+  
+  //输出结果
+  test1
+  test2
+  test3
+  
+  //2.3如果dictionar中的key与model中的变量名字不同，怎么赋值？
+  //还是从setValue:forUndefinedKey:这个方法入手
+  -(void)setValue:(id)value forUndefinedKey:(NSString *)key{
+    if ([key isEqualToString:@"key2"]) {
+      self.id = value;
+  }
+  person.key1 = dictionary[@"key1"];
+  person.id = dictionary[@"key2"];
+  person.key3 = dictionary[@"key3"];
+  [person setValuesForKeysWithDictionary:dictionary];
+  NSLog(@"\n%@\n%@\n%@\n", person.key1,person.id,person.key3);
+    
+  //输出结果
+  test1
+  test2
+  test3
   ```
 
 
@@ -182,26 +192,26 @@
 > 处理集合包含的对象，并根据操作符的不同返回不同的类型，返回值以`NSNumber`为主。
 
 ```objective-c
-		//@avg用来计算集合中right keyPath指定的属性的平均值
-    NSNumber *transactionAverage = [bankAccount.transcationArray valueForKeyPath:@"@avg.amount"];
-    NSLog(@"@avg = %@", transactionAverage);
-    
-    //@count用来计算集合的总数
-    NSNumber *numberOfTransactions = [bankAccount.transcationArray valueForKeyPath:@"@count"];
-    NSLog(@"@count = %@", numberOfTransactions);
-    //备注：@count操作符比较特殊，它不需要写right keyPath，即使写了也会被忽略。
-    
-    //@sum用来计算集合中right keyPath指定的属性的总和。
-    NSNumber *amountSum = [bankAccount.transcationArray valueForKeyPath:@"@sum.amount"];
-    NSLog(@"@sum = %@", amountSum);
-    
-    //@max用来查找集合中right keyPath指定的属性的最大值
-    NSNumber *amountMax = [bankAccount.transcationArray valueForKeyPath:@"@max.amount"];
-    NSLog(@"@max = %@", amountMax);
-    
-    //@min用来查找集合中right keyPath指定的属性的最小值。
-    NSNumber *amountMin = [bankAccount.transcationArray valueForKeyPath:@"@min.amount"];
-    NSLog(@"@min = %@", amountMin);
+//@avg用来计算集合中right keyPath指定的属性的平均值
+NSNumber *transactionAverage = [bankAccount.transcationArray valueForKeyPath:@"@avg.amount"];
+NSLog(@"@avg = %@", transactionAverage);
+
+//@count用来计算集合的总数
+NSNumber *numberOfTransactions = [bankAccount.transcationArray valueForKeyPath:@"@count"];
+NSLog(@"@count = %@", numberOfTransactions);
+//备注：@count操作符比较特殊，它不需要写right keyPath，即使写了也会被忽略。
+
+//@sum用来计算集合中right keyPath指定的属性的总和。
+NSNumber *amountSum = [bankAccount.transcationArray valueForKeyPath:@"@sum.amount"];
+NSLog(@"@sum = %@", amountSum);
+
+//@max用来查找集合中right keyPath指定的属性的最大值
+NSNumber *amountMax = [bankAccount.transcationArray valueForKeyPath:@"@max.amount"];
+NSLog(@"@max = %@", amountMax);
+
+//@min用来查找集合中right keyPath指定的属性的最小值。
+NSNumber *amountMin = [bankAccount.transcationArray valueForKeyPath:@"@min.amount"];
+NSLog(@"@min = %@", amountMin);
 ```
 
 #### 数组操作符
@@ -209,14 +219,14 @@
 > 根据操作符的条件，将符合条件的对象包含在数组中返回。
 
 ```objective-c
-		//@unionOfObjects将集合对象中，所有payee对象放在一个数组中并返回
-    NSArray *payees = [bankAccount.transcationArray valueForKeyPath:@"@unionOfObjects.payee"];
-    NSLog(@"@unionOfObjects = %@", payees);
-    
-    //@distinctUnionOfObjects将集合对象中，所有payee对象放在一个数组中，并将数组进行去重后返回。
-    NSArray *distinctPayees = [bankAccount.transcationArray valueForKeyPath:@"@distinctUnionOfObjects.payee"];
-    NSLog(@"@distinctUnionOfObjects = %@", distinctPayees);
-    //注意：以上两个方法中，如果操作的属性为nil，在添加到数组中时会导致Crash。
+//@unionOfObjects将集合对象中，所有payee对象放在一个数组中并返回
+NSArray *payees = [bankAccount.transcationArray valueForKeyPath:@"@unionOfObjects.payee"];
+NSLog(@"@unionOfObjects = %@", payees);
+
+//@distinctUnionOfObjects将集合对象中，所有payee对象放在一个数组中，并将数组进行去重后返回。
+NSArray *distinctPayees = [bankAccount.transcationArray valueForKeyPath:@"@distinctUnionOfObjects.payee"];
+NSLog(@"@distinctUnionOfObjects = %@", distinctPayees);
+//注意：以上两个方法中，如果操作的属性为nil，在添加到数组中时会导致Crash。
 ```
 
 #### 嵌套操作符
@@ -224,13 +234,13 @@
 > 处理集合对象中嵌套其他集合对象的情况，返回结果也是一个集合对象。
 
 ```objective-c
-		//@distinctUnionOfArrays是用来操作集合内部的集合对象，将所有right keyPath对应的对象放在一个数组中，并进行排重。
-    NSArray *collectedPayees = [allArray valueForKeyPath:@"@unionOfArrays.payee"];
-    NSLog(@"@unionOfArrays = %@", collectedPayees);
-    
-    //@distinctUnionOfSets是用来操作集合内部的集合对象，将所有right keyPath对应的对象放在一个set中，并进行排重。
-    NSArray *collectedDistinctPayees = [allArray valueForKeyPath:@"@distinctUnionOfArrays.payee"];
-    NSLog(@"@distinctUnionOfArrays = %@", collectedDistinctPayees);
+//@distinctUnionOfArrays是用来操作集合内部的集合对象，将所有right keyPath对应的对象放在一个数组中，并进行排重。
+NSArray *collectedPayees = [allArray valueForKeyPath:@"@unionOfArrays.payee"];
+NSLog(@"@unionOfArrays = %@", collectedPayees);
+
+//@distinctUnionOfSets是用来操作集合内部的集合对象，将所有right keyPath对应的对象放在一个set中，并进行排重。
+NSArray *collectedDistinctPayees = [allArray valueForKeyPath:@"@distinctUnionOfArrays.payee"];
+NSLog(@"@distinctUnionOfArrays = %@", collectedDistinctPayees);
 ```
 
 ### KVC与容器类
@@ -405,6 +415,10 @@ KVCDemo[867:58871] country:China
 ### 动态的取值和设值
 
 > 利用KVC动态的取值和设值是最基本的用途了。相信每一个iOS开发者都能熟练掌握
+
+### Model和字典转换
+
+> 在上面KVC批量操作已阐述
 
 ### 用KVC来访问和修改私有变量
 
