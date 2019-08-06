@@ -7,6 +7,7 @@
 //
 
 #import "ViewController.h"
+#import <objc/runtime.h>
 #import "Person.h"
 
 @interface ViewController ()
@@ -26,8 +27,17 @@
 - (void)addObserver
 {
     NSKeyValueObservingOptions option = NSKeyValueObservingOptionOld | NSKeyValueObservingOptionNew;
+    
+    NSLog(@"person1添加KVO监听对象之前-类对象 -%@", object_getClass(self.person1));
+    NSLog(@"person1添加KVO监听之前-方法实现 -%p", [self.person1 methodForSelector:@selector(setAge:)]);
+    NSLog(@"person1添加KVO监听之前-元类对象 -%@", object_getClass(object_getClass(self.person1)));
+    
     [self.person1 addObserver:self forKeyPath:@"age" options:option context:@"age chage"];
     [self.person1 addObserver:self forKeyPath:@"name" options:option context:@"name change"];
+    
+    NSLog(@"person1添加KVO监听对象之后-类对象 -%@", object_getClass(self.person1));
+    NSLog(@"person1添加KVO监听之后-方法实现 -%p", [self.person1 methodForSelector:@selector(setAge:)]);
+    NSLog(@"person1添加KVO监听之后-元类对象 -%@", object_getClass(object_getClass(self.person1)));
 }
 
 /**
@@ -39,7 +49,7 @@
  */
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
 {
-    NSLog(@"监听到%@的%@属性值改变了 - %@ - %@", object, keyPath, change, context);
+//    NSLog(@"监听到%@的%@属性值改变了 - %@ - %@", object, keyPath, change, context);
 }
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
@@ -58,4 +68,5 @@
     [self.person1 removeObserver:self forKeyPath:@"age"];
     [self.person1 removeObserver:self forKeyPath:@"name"];
 }
+
 @end
