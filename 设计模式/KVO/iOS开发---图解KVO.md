@@ -1,6 +1,8 @@
+
 Table of Contents
 =================
 
+   * [Table of Contents](#table-of-contents)
    * [iOS开发---图解KVO](#ios开发---图解kvo)
       * [什么是KVO？](#什么是kvo)
       * [KVO基本使用](#kvo基本使用)
@@ -16,14 +18,15 @@ Table of Contents
             * [多次移除观察者](#多次移除观察者)
          * [实际应用](#实际应用)
       * [KVO实现原理](#kvo实现原理)
-            * [测试代码](#测试代码)
-            * [发现中间对象](#发现中间对象)
-               * [NSKVONotifying_Person类内部实现](#nskvonotifying_person类内部实现)
-               * [setter实现不同](#setter实现不同)
-            * [KVO内部调用流程](#kvo内部调用流程)
+          * [测试代码](#测试代码)
+          * [发现中间对象](#发现中间对象)
+             * [NSKVONotifying_Person类内部实现](#nskvonotifying_person类内部实现)
+             * [setter实现不同](#setter实现不同)
+          * [KVO内部调用流程](#kvo内部调用流程)
       * [KVO扩展](#kvo扩展)
-            * [1.KVC 与 KVO 的不同？](#1kvc-与-kvo-的不同)
-            * [2.和 notification(通知)的区别？](#2和-notification通知的区别)
+          * [1.KVC 与 KVO 的不同？](#1kvc-与-kvo-的不同)
+          * [2.和 notification(通知)的区别？](#2和-notification通知的区别)
+
 
 # iOS开发---图解KVO
 
