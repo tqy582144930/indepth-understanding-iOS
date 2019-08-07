@@ -1,4 +1,20 @@
-[TOC]
+Table of Contents
+=================
+
+   * [iOS开发---单例详解](#ios开发---单例详解)
+      * [什么是单例模式？](#什么是单例模式)
+      * [单例使用场合](#单例使用场合)
+      * [单例优缺点](#单例优缺点)
+            * [优点](#优点)
+            * [缺点](#缺点)
+      * [单例的实现方式](#单例的实现方式)
+         * [单例中懒汉式实现方式](#单例中懒汉式实现方式)
+            * [加锁](#加锁)
+            * [GCD](#gcd)
+         * [单例中饿汉式实现方式](#单例中饿汉式实现方式)
+         * [MRC下单例实现方式](#mrc下单例实现方式)
+      * [封装单例模式](#封装单例模式)
+
 
 # iOS开发---单例详解
 
@@ -360,23 +376,23 @@ static id manager;
 static id instance;\
 + (instancetype)allocWithZone:(struct _NSZone *)zone\
 {\
-    static dispatch_once_t onceToken;\
-    dispatch_once(&onceToken, ^{\
-    instance = [[super alloc]init];\
-    });\
-    return instance;\
+	static dispatch_once_t onceToken;\
+	dispatch_once(&onceToken, ^{\
+	instance = [[super alloc]init];\
+	});\
+	return instance;\
 }\
 + (instancetype)shared##name\
 {\
-    static dispatch_once_t onceToken;\
-    dispatch_once(&onceToken, ^{\
-    instance = [[self alloc]init];\
-    });\
-    return instance;\
+	static dispatch_once_t onceToken;\
+	dispatch_once(&onceToken, ^{\
+	instance = [[self alloc]init];\
+	});\
+	return instance;\
 }\
 - (id)copyWithZone:(NSZone *)zone\
 {\
-		return instance;\
+	return instance;\
 }
  
 #else
@@ -385,38 +401,38 @@ static id instance;\
 static id instance;\
 + (instancetype)allocWithZone:(struct _NSZone *)zone\
 {\
-    static dispatch_once_t onceToken;\
-    dispatch_once(&onceToken, ^{\
-    instance = [[super alloc]init];\
-    });\
-    return instance;\
+	static dispatch_once_t onceToken;\
+	dispatch_once(&onceToken, ^{\
+	instance = [[super alloc]init];\
+	});\
+	return instance;\
 }\
 + (instancetype)shared##name\
 {\
-    static dispatch_once_t onceToken;\
-    dispatch_once(&onceToken, ^{\
-    instance = [[self alloc]init];\
-    });\
-    return instance;\
+	static dispatch_once_t onceToken;\
+	dispatch_once(&onceToken, ^{\
+	instance = [[self alloc]init];\
+	});\
+	return instance;\
 }\
 - (id)copyWithZone:(NSZone *)zone\
 {\
-		return instance;\
+	return instance;\
 }\
 - (oneway void)release\
 {\
 }\
 - (instancetype)retain\
 {\
-		return instance;\
+	return instance;\
 }\
 - (NSUInteger)retainCount\
 {\
-		return 1;\
+	return 1;\
 }\
 - (instancetype)autorelease\
 {\
-		return instance;\
+	return instance;\
 }
 ```
 
