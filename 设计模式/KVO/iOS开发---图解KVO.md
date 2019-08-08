@@ -1,8 +1,4 @@
 
-Table of Contents
-=================
-
-   * [Table of Contents](#table-of-contents)
    * [iOS开发---图解KVO](#ios开发---图解kvo)
       * [什么是KVO？](#什么是kvo)
       * [KVO基本使用](#kvo基本使用)
