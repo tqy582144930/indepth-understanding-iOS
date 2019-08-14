@@ -1,6 +1,6 @@
 [TOC]
 
-# iOS开发---图解GCD
+# iOS开发—GCD详解
 
 ## 什么是GCD？
 

@@ -34,8 +34,14 @@
 //    //调用addOperation: 将操作加入到操作队列中
 //    [self addOprationToQueue];
     
-    //调用addOperationWithBlock:将包含操作的blcok添加到队列中
-    [self addOperationWithBlockToQueue];
+//    //调用addOperationWithBlock:将包含操作的blcok添加到队列中
+//    [self addOperationWithBlockToQueue];
+    
+//    //设置MaxConcurrentOperationCount(最大并发操作数)
+//    [self setMaxConcurrentOperationCount];
+    
+    //操作依赖
+    [self addDependency];
     
 }
 
@@ -269,5 +275,91 @@ NSOperation-test[2762:588975] 4---<NSThread: 0x6000027d8140>{number = 6, name = 
     //使用 addOperationWithBlock: 将操作加入到操作队列后能够开启新线程，进行并发执行。
 }
 
+#pragma 设置MaxConcurrentOperationCount(最大并发操作数)
+- (void)setMaxConcurrentOperationCount {
+    // 1.创建队列
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    
+    // 2.设置最大并发操作数
+    queue.maxConcurrentOperationCount = 1;//串行队列
+//    queue.maxConcurrentOperationCount = 2;//并发队列
+//    queue.maxConcurrentOperationCount = 8;//并发队列
+
+    // 3.添加操作
+    [queue addOperationWithBlock:^{
+        for (int i = 0; i < 2; i++) {
+            [NSThread sleepForTimeInterval:2]; // 模拟耗时操作
+            NSLog(@"1---%@", [NSThread currentThread]); // 打印当前线程
+        }
+    }];
+    
+    [queue addOperationWithBlock:^{
+        for (int i = 0; i < 2; i++) {
+            [NSThread sleepForTimeInterval:2]; // 模拟耗时操作
+            NSLog(@"2---%@", [NSThread currentThread]); // 打印当前线程
+        }
+    }];
+    
+    [queue addOperationWithBlock:^{
+        for (int i = 0; i < 2; i++) {
+            [NSThread sleepForTimeInterval:2]; // 模拟耗时操作
+            NSLog(@"3---%@", [NSThread currentThread]); // 打印当前线程
+        }
+    }];
+    
+    [queue addOperationWithBlock:^{
+        for (int i = 0; i < 2; i++) {
+            [NSThread sleepForTimeInterval:2]; // 模拟耗时操作
+            NSLog(@"4---%@", [NSThread currentThread]); // 打印当前线程
+        }
+    }];
+    
+//打印结果
+//NSOperation-test[1452:89261] 1---<NSThread: 0x600002ca0140>{number = 3, name = (null)}
+//NSOperation-test[1452:89261] 1---<NSThread: 0x600002ca0140>{number = 3, name = (null)}
+//NSOperation-test[1452:89264] 2---<NSThread: 0x600002ca8240>{number = 4, name = (null)}
+//NSOperation-test[1452:89264] 2---<NSThread: 0x600002ca8240>{number = 4, name = (null)}
+//NSOperation-test[1452:89261] 3---<NSThread: 0x600002ca0140>{number = 3, name = (null)}
+//NSOperation-test[1452:89261] 3---<NSThread: 0x600002ca0140>{number = 3, name = (null)}
+//NSOperation-test[1452:89261] 4---<NSThread: 0x600002ca0140>{number = 3, name = (null)}
+//NSOperation-test[1452:89261] 4---<NSThread: 0x600002ca0140>{number = 3, name = (null)}
+
+//当最大并发操作数为1时，操作是按顺序串行执行的，并且一个操作完成之后，下一个操作才开始执行。当最大操作并发数为2时，操作是并发执行的，可以同时执行两个操作。而开启线程数量是由系统决定的，不需要我们来管理。
+}
+
+#pragma 操作依赖
+- (void)addDependency {
+    // 1.创建队列
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    
+    // 2.创建操作
+    NSBlockOperation *operation1 = [NSBlockOperation blockOperationWithBlock:^{
+        for (int i = 0; i < 2; i++) {
+            [NSThread sleepForTimeInterval:2]; // 模拟耗时操作
+            NSLog(@"1---%@", [NSThread currentThread]); // 打印当前线程
+        }
+    }];
+    
+    NSBlockOperation *operation2 = [NSBlockOperation blockOperationWithBlock:^{
+        for (int i = 0; i < 2; i++) {
+            [NSThread sleepForTimeInterval:2]; // 模拟耗时操作
+            NSLog(@"2---%@", [NSThread currentThread]); // 打印当前线程
+        }
+    }];
+    
+    // 3.添加依赖
+    [operation2 addDependency:operation1];//让op2依赖于op1，先执行op1，再执行op2
+    
+    [queue addOperation:operation1];
+    [queue addOperation:operation2];
+    
+//打印结果
+//NSOperation-test[1547:108900] 1---<NSThread: 0x60000177c140>{number = 3, name = (null)}
+//NSOperation-test[1547:108900] 1---<NSThread: 0x60000177c140>{number = 3, name = (null)}
+//NSOperation-test[1547:108898] 2---<NSThread: 0x60000173c1c0>{number = 4, name = (null)}
+//NSOperation-test[1547:108898] 2---<NSThread: 0x60000173c1c0>{number = 4, name = (null)}
+
+    //通过添加操作依赖，无论运行几次，其结果都是 op1 先执行，op2 后执行。
+}
 
 @end
