@@ -24,39 +24,39 @@
                                      @"test2",@"key2",
                                      @"test3",@"key3",
                                      @"test4",@"key4", nil];
-    NSLog(@"%@", [dictionary valueForKey:@"key1"]);
-    NSDictionary *dictionary1 = [dictionary dictionaryWithValuesForKeys:@[@"key2", @"key1"]];
-    NSLog(@"%@", dictionary1);
+//    NSLog(@"%@", [dictionary valueForKey:@"key1"]);
+//    NSDictionary *dictionary1 = [dictionary dictionaryWithValuesForKeys:@[@"key2", @"key1"]];
+//    NSLog(@"%@", dictionary1);
     
     //创建一个model模型，里面的字符串名称必须和key的名称对应，不然该方法会崩溃
-    PersonModel *person = [[PersonModel alloc] init];
+//    PersonModel *person = [[PersonModel alloc] init];
     //1.这是直接赋值，数据量小会很简单，但是数据量一多就很麻烦，就像我们进行网络请求时
-    person.key1 = dictionary[@"key1"];
-    person.key2 = dictionary[@"key2"];
-    person.key3 = dictionary[@"key3"];
+//    person.key1 = dictionary[@"key1"];
+//    person.key2 = dictionary[@"key2"];
+//    person.key3 = dictionary[@"key3"];
     
     //2.通过下面该方法可以批量赋值
     //2.1如果model里面的string不存在于dictionary中，输出结果为null；
-    [person setValuesForKeysWithDictionary:dictionary];
-    NSLog(@"\n%@\n%@\n%@\n%@\n", person.key1,person.key2,person.key3,person.other);
+//    [person setValuesForKeysWithDictionary:dictionary];
+//    NSLog(@"\n%@\n%@\n%@\n%@\n", person.key1,person.key2,person.key3,person.other);
     
     //2.2如果dictionary中有的元素，moedl中没有运行会直接出错，那么我们应该怎么解决？
     //我们需要实现setValue:forUndefinedKey:这个方法能过滤掉不存在的键值
     //============请跳转至PersonModel文件中============
-    person.key1 = dictionary[@"key1"];
-    person.key2 = dictionary[@"key2"];
-    person.key3 = dictionary[@"key3"];
-    [person setValuesForKeysWithDictionary:dictionary];
-    NSLog(@"\n%@\n%@\n%@\n", person.key1,person.key2,person.key3);
+//    person.key1 = dictionary[@"key1"];
+//    person.key2 = dictionary[@"key2"];
+//    person.key3 = dictionary[@"key3"];
+//    [person setValuesForKeysWithDictionary:dictionary];
+//    NSLog(@"\n%@\n%@\n%@\n", person.key1,person.key2,person.key3);
     
     //2.3如果dictionar中的key与model中的变量名字不同，怎么赋值？
     //还是从setValue:forUndefinedKey:这个方法入手
     //============请跳转至PersonModel文件中============
-    person.key1 = dictionary[@"key1"];
-    person.id = dictionary[@"key2"];
-    person.key3 = dictionary[@"key3"];
-    [person setValuesForKeysWithDictionary:dictionary];
-    NSLog(@"\n%@\n%@\n%@\n", person.key1,person.id,person.key3);
+//    person.key1 = dictionary[@"key1"];
+//    person.id = dictionary[@"key2"];
+//    person.key3 = dictionary[@"key3"];
+//    [person setValuesForKeysWithDictionary:dictionary];
+//    NSLog(@"\n%@\n%@\n%@\n", person.key1,person.id,person.key3);
   
     
     //----------------------------集合运算符-----------------------------
@@ -124,7 +124,7 @@
     NSArray *transcationArray2 = [[NSArray alloc] initWithObjects:transaction4,transaction5,transaction6, nil];
     NSArray *allArray = @[bankAccount.transcationArray, transcationArray2];
     
-    //@distinctUnionOfArrays是用来操作集合内部的集合对象，将所有right keyPath对应的对象放在一个数组中，并进行排重。
+    //@unionOfArrays是用来操作集合内部的集合对象，将所有right keyPath对应的对象放在一个数组中，并进行排重。
     NSArray *collectedPayees = [allArray valueForKeyPath:@"@unionOfArrays.payee"];
     NSLog(@"@unionOfArrays = %@", collectedPayees);
     
@@ -142,7 +142,9 @@
         NSLog(@"error = %@", error);
     }
     
+
 }
+
 
 
 

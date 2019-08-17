@@ -21,6 +21,7 @@
     self.person1 = [[Person alloc] init];
     self.person1.age = 28;
     self.person1.name = @"tu";
+    self.person1.score = 10;
     [self addObserver];
 }
 
@@ -32,12 +33,18 @@
     NSLog(@"person1添加KVO监听之前-方法实现 -%p", [self.person1 methodForSelector:@selector(setAge:)]);
     NSLog(@"person1添加KVO监听之前-元类对象 -%@", object_getClass(object_getClass(self.person1)));
     
+    NSLog(@"person1添加KVO监听之前-方法实现 -%p", [self.person1 methodForSelector:@selector(setName:)]);
+    
     [self.person1 addObserver:self forKeyPath:@"age" options:option context:@"age chage"];
     [self.person1 addObserver:self forKeyPath:@"name" options:option context:@"name change"];
+    [self.person1 addObserver:self forKeyPath:@"score" options:option context:@"score change"];
     
     NSLog(@"person1添加KVO监听对象之后-类对象 -%@", object_getClass(self.person1));
-    NSLog(@"person1添加KVO监听之后-方法实现 -%p", [self.person1 methodForSelector:@selector(setAge:)]);
+    NSLog(@"person1添加KVO监听之后-Age方法实现 -%p", [self.person1 methodForSelector:@selector(setAge:)]);
     NSLog(@"person1添加KVO监听之后-元类对象 -%@", object_getClass(object_getClass(self.person1)));
+    
+    NSLog(@"person1添加KVO监听之后-Name方法实现 -%p", [self.person1 methodForSelector:@selector(setName:)]);
+    NSLog(@"person1添加KVO监听之后-Score方法实现 -%p", [self.person1 methodForSelector:@selector(setScore:)]);
 }
 
 /**

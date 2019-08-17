@@ -11,11 +11,15 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface PersonModel : NSObject
+{
+    NSString *_string;
+}
 @property (nonatomic, copy) NSString *key1;
-@property (nonatomic, copy) NSString *key2;
+//@property (nonatomic, copy) NSString *key2;
 @property (nonatomic, copy) NSString *id;
 @property (nonatomic, copy) NSString *key3;
 @property (nonatomic, copy) NSString *other;
+@property (nonatomic, copy, readonly) NSString *string;
 
 -(void)setValue:(id)value forUndefinedKey:(NSString *)key;
 @end
