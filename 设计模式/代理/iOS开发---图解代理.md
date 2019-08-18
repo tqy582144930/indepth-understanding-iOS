@@ -38,7 +38,7 @@
 - 代理机制由代理对象、委托者、协议三部分组成
 - 下面我们用一张图来展示之间的关系
 
-![](http://ww4.sinaimg.cn/large/006tNc79ly1g5se8intlwj30mg0eiq4d.jpg)
+![](http://ww2.sinaimg.cn/large/006tNc79ly1g63ttaxvdej30mg0eemyl.jpg)
 
 ### 协议
 
@@ -172,11 +172,11 @@
 
 - 我们定义的指针默认都是`__strong`类型的，而属性本质上也是一个成员变量和`set`、`get`方法构成的，`strong`类型的指针会造成强引用，必定会影响一个对象的生命周期，这也就会形成循环引用。
 
-![](http://ww4.sinaimg.cn/large/006tNc79ly1g5sh5phy58j30uk0ar3zm.jpg)
+![](http://ww4.sinaimg.cn/large/006tNc79ly1g63ttq0tofj30tl0bcdgz.jpg)
 
 - 上图中，由于代理对象使用强引用指针，指向创建的委托方`loginViewController`对象，并且委托方`delegate`属性强引用代理对象。这就会导致`LoginVC`的`delegate`属性强引用代理对象，导致循环引用的问题，最终两个对象都无法正常释放。
 
-![](http://ww4.sinaimg.cn/large/006tNc79ly1g5sh9pxfr3j30uk07j3zh.jpg)
+![](http://ww2.sinaimg.cn/large/006tNc79ly1g63ttumblyj30tl07vt9p.jpg)
 
 - 我们将`loginViewController`对象的`delegate`属性，设置为弱引用属性。这样在代理对象生命周期存在时，可以正常为我们工作，如果代理对象被释放，委托方和代理对象都不会因为内存释放导致的**Crash**。
 
