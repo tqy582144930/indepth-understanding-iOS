@@ -19,8 +19,8 @@
             * [id的指针id *obj类型](#id的指针id-obj类型)
             * [@autoreleasepool](#autoreleasepool)
       * [ARC规则](#arc规则)
-            * [init方法](#init方法)
-            * [显示转换id和void*](#显示转换id和void)
+           * [init方法](#init方法)
+           * [显示转换id和void*](#显示转换id和void)
 
 
 # 什么是ARC?
