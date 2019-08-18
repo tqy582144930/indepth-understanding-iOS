@@ -1,3 +1,5 @@
+[TOC]
+
 # 概要
 
 - OC中内存管理（也就是引用计数），通俗来说给每个对象添加一个标记值，每次增加一个对象持有他标记值加一，每次减少一个对象持有它标记值减一，最小为0。
@@ -25,7 +27,7 @@
 
 ## 自己生成的对象，并自己持有
 
-####  alloc
+###  alloc
 
 ```objective-c
 //自己生成并持有对象
@@ -34,7 +36,7 @@ id obj = [[NSObject alloc] init];
 //指向生成并持有对象的指针被赋值给obj
 ```
 
-#### new
+### new
 
 ```objective-c
 //自己生成并持有对象
@@ -43,14 +45,14 @@ id obj = [[NSObject alloc] init];
 //[[NSObject alloc] init] 与 [NSObject new]方法完全一致
 ```
 
-#### copy与mutableCopy
+### copy与mutableCopy
 
 - 由于这两个比较类似，区别在于，copy生成不可变副本，mutableCopy生成可变更的对象。这就类似于NSArray和NSMutableArray的差异。
 - 想要更好的理解copy和mutableCopy建议大家了解一下什么是深复制和浅复制。
 
 ##非自己生成的对象，自己也能持有
 
-####retain
+###retain
 
 ```objective-c
 //取得非自己生成并持有的对象
@@ -66,7 +68,7 @@ id obj = [NSMutableArray array];
 
 ## 不再需要自己持有的对象时释放
 
-#### release
+### release
 
 ```objective-c
 //自己生成并持有对象
