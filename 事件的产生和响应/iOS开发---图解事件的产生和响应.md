@@ -90,7 +90,7 @@
   3. 如果触摸点也在`白色view`身上，那么`白色view`会从后往前遍历自己的`子控件（绿色view）`,判断自己能否接收触摸事件。如果能，那么再判断触摸点在不在`绿色view`自己身上。
   4. 如果触摸点也在`绿色view`身上，那么`绿色view`会从后往前遍历自己的子控件，发现自己没有子控件，那么我们就找到了最合适的`view`就是`绿色view`
 
-  > 注意⚠️：之所以会采取从后往前遍历子控件的方式寻找最合适的`view`只是为了做一些循环优化。因为相比较之下，后添加的`view`在上面，降低循环次数。
+  > 注意⚠️：**之所以会采取从后往前遍历子控件的方式寻找最合适的`view`只是为了做一些循环优化。因为相比较之下，后添加的`view`在上面，降低循环次数。**
 
 ##### 事件传递的底层实现
 
@@ -130,7 +130,7 @@
   - 只要事件一传递给一个控件,这个控件就会调用他自己的`hitTest:withEvent:方法`
 - 这个方法作用？
   - 寻找并返回最合适的view(能够响应事件的那个最合适的view)
-- 注意⚠️：不管这个控件能不能处理事件，也不管触摸点在不在这个控件上，事件都会先传递给这个控件，随后再调用`hitTest:withEvent:方法`来进行判断
+- 注意⚠️：**不管这个控件能不能处理事件，也不管触摸点在不在这个控件上，事件都会先传递给这个控件，随后再调用`hitTest:withEvent:方法`来进行判断**
 
 ###### pointInside:withEvent:方法
 
@@ -148,13 +148,13 @@
 
   > 注意⚠️：
   >
-  > - 当用户用一根手指触摸屏幕时，会创建一个与手指相关的UITouch对象
+  > - **当用户用一根手指触摸屏幕时，会创建一个与手指相关的UITouch对象* **
   >
-  > - 一根手指对应一个UITouch对象
+  > - **一根手指对应一个UITouch对象**
   >
-  > - 如果两根手指同时触摸一个view，那么view只会调用一次touchesBegan:withEvent:方法，touches参数中装着2个UITouch对象
+  > - **如果两根手指同时触摸一个view，那么view只会调用一次touchesBegan:withEvent:方法，touches参数中装着2个UITouch对象**
   >
-  > - 如果这两根手指一前一后分开触摸同一个view，那么view会分别调用2次touchesBegan:withEvent:方法，并且每次调用时的touches参数中只包含一个UITouch对象
+  > - **如果这两根手指一前一后分开触摸同一个view，那么view会分别调用2次touchesBegan:withEvent:方法，并且每次调用时的touches参数中只包含一个UITouch对象**
 
 - UITouch的作用
 
@@ -239,7 +239,91 @@
 
 ### 响应者链
 
-- 由很多响应者链接在一起组合起来的一个链条称之为响应者链条
+- 由很多**响应者**链接在一起组合起来的一个链条称之为**响应者链条**
 
   - > 补充：**响应者链条其实还包括视图控制器、UIWindow和UIApplication**
+
+- 下面我们用一张图来展示响应者链
+
+![](http://ww1.sinaimg.cn/large/006tNc79ly1g63sc2jxb9j30gr093q4b.jpg)
+
+- 首先`initial view`会把事件传递给`橘黄色的view`，`橘黄色view`又把事件给时间传递给了`蓝绿色view`，`蓝绿色view`把时间传递给了`控制器view`，`控制器view`把事件传递给了窗口，窗口把事件传递给了`Application`对象,如果最后`Application`还是不能处理此事件则将其丢弃.
+  - 在事件的响应中，如果某个控件实现了`touches`方法，则这个事件将由该控件来接受，如果调用了`[super touches….]`;就会将事件顺着响应者链条往上传递，传递给上一个响应者；接着就会调用上一个响应者的`touches`方法
+- 如何判断上一个响应者
+  1. 如果当前这个`view`是控制器的`view`,那么控制器就是上一个响应者
+  2. 如果当前这个`view`不是控制器的`view`,那么父控件就是上一个响应者
+
+## 事件的整个流程总结
+
+1. 当一个事件发生后，事件会从父控件传给子控件，也就是说由`UIApplication -> UIWindow -> UIView -> initial view`,以上就是**事件的传递，也就是寻找最合适的view的过程**。
+
+2. 接下来是**事件的响应**。首先看`initial view`能否处理这个事件，如果不能则会将事件传递给其上级视图`（inital view的superView）`；如果上级视图仍然无法处理则会继续往上传递；一直传递到视图控制器`view controller`，首先判断视图控制器的根视图view是否能处理此事件；如果不能则接着判断该视图控制器能否处理此事件，如果还是不能则继续向上传递；（对于第二个图视图控制器本身还在另一个视图控制器中，则继续交给父视图控制器的根视图，如果根视图不能处理则交给父视图控制器处理）；一直到` window`，如果`window`还是不能处理此事件则继续交给`application`处理，如果最后application还是不能处理此事件则将其丢弃
+
+3. 在**事件的响应中**，如果某个控件实现了`touches`方法，则这个事件将由该控件来接受，如果调用了`[super touches….]`;就会将事件顺着响应者链条往上传递，传递给上一个响应者；接着就会调用上一个响应者的`touches`方法
+
+- 注意⚠️：**事件的传递是从上到下（父控件到子控件），事件的响应是从下到上（顺着响应者链条向上传递：子控件到父控件）。**
+
+# hitTest:和pointInside:的应用
+
+### 屏蔽
+
+- 如果将某个view的`pointInsdie:`方法直接返回NO（无论子控件的`pointInsdie:`返回什么），影响的是子控件区域和自身区域的点击事件处理，这些区域不再响应事件。其余区域响应点击事件不发生变化。
+- 如果将某个`view`的`pointInside:`方法直接返回`YES`，自身区域响应点击事件不变。其它区域改变:
+  1. 父控件所有区域点击事件交给该`view`处理。
+  2. 再看该`view`处于父控件的子控件数组中的位置。数组前面的兄弟控件的点击事件交给该`view`处理，数组后面的兄弟控件的点击事件由其兄弟控件处理。
+  3. 该`view`的子控件原来能够自己处理点击的区域继续由子控件处理，子控件原来不能够自己处理点击的（超出了该view范围）区域仍然可以由子控件处理了
+- 总结：**想要屏蔽掉某个view响应点击事件，如果其没有子控件或者子控件响应事件也想屏蔽掉，直接将该view的pointInside返回为NO就行了。而在一般情况下，不建议将view的pointInside直接返回YES（影响范围太广，不好控制）。**
+
+### 穿透
+
+- 我们先假设有一个黄色控件和白色控件，白色空间覆盖在黄色控件上，如果你不想让你点击的那个`白色view`处理该事件，而是想要`黄色view`来响应该事件，就需要我么所说的穿透
+
+- 我们有两种方式来实现穿透：
+
+  1. 如果`whiteView`是`yellowView`的兄弟控件。
+
+     1. 可以重写`whiteView`里面的`hitTest:`方法:判断触摸在`whiteView`上的点，如果在`yellowView`上，`hitTest:`返回`yellowView`，交给其响应。
+
+     ```objective-c
+     - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+         CGPoint yellowPoint = [self convertPoint:point toView:_yellowView];
+             if ([_yellowView pointInside:yellowPoint withEvent:event]) {
+             		return _yellowView;
+         }
+         return [super hitTest:point withEvent:event];
+     }
+     ```
+
+     2. 也可以重写`whiteView`的`pointInside:`方法：如果触摸点属于`yellowView`范围，返回`NO`，该范围内`whiteView`不响应点击。
+
+     ```objective-c
+     - (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event {
+         CGPoint yellowPoint =[_yellowView convertPoint:point fromView:self];
+         if ([_yellowView pointInside:yellowPoint withEvent:event]){
+           	return NO;
+         } else {
+          		return [super pointInside:point withEvent:event];
+         }
+     }
+     
+     ```
+
+  2. 如果`whiteView`是`yellowView`的子控件
+
+     1. 需要重写`whiteView`里面的`hitTest方法：`
+
+     ```objective-c
+     - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+         CGPoint yellowPoint = [self convertPoint:point toView:_yellowView];
+         if ([_yellowView pointInside:yellowPoint withEvent:event]) {
+         		return _yellowView;
+         }
+         return [super hitTest:point withEvent:event];
+     }
+     
+     ```
+
+     
+
+  
 
