@@ -1,5 +1,7 @@
 [TOC]
 
+
+
 # 概要
 
 - OC中内存管理（也就是引用计数），通俗来说给每个对象添加一个标记值，每次增加一个对象持有他标记值加一，每次减少一个对象持有它标记值减一，最小为0。
@@ -202,9 +204,7 @@ NSAllocateObject (Clasee aClass, NSUInterger extraBytes, NSZone *zone) {
   ```
 
   ```objective-c
-  
-  ```
-- (NSUInteger) retainCount
+  - (NSUInteger) retainCount
   {
       return NSExtraRefCount(self) + 1;
   }
@@ -213,9 +213,6 @@ NSAllocateObject (Clasee aClass, NSUInterger extraBytes, NSZone *zone) {
   NSExtraRefCount(id anObject)
   {
       return ((struct obj_layout *) anObject)[-1].retained;	//先找到对象内存头部，然后减去一个struct obj_layout的大小，然后就能获取到引用计数的地址，然后获取到retained的值。由于分配内存时为0，所以在返回值时需要+1；
-  }
-  
-  ```
   
   ```
 
