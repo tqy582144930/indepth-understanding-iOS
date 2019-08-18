@@ -306,7 +306,7 @@ NSLog(@"@distinctUnionOfArrays = %@", collectedDistinctPayees);
 >
 > 你需要先看一下这张流程图，大致知道如何运转的，之后再看文字描述，仔细了解其机制
 
-![NSMutableArray取值底层实现](http://ww1.sinaimg.cn/large/006tNc79ly1g5owaipsrxj31jz0mr0yg.jpg)
+![](http://ww3.sinaimg.cn/large/006tNc79ly1g63tywkelhj31jz0mrtef.jpg)
 
 1. 搜索`insertObject:in<Key>AtIndex:` , `removeObjectFrom<Key>AtIndex:` 或者 `insert<Key>AdIndexes` , `remove<Key>AtIndexes` 格式的方法
     如果至少找到一个`insert`方法和一个`remove`方法，那么同样返回一个可以响应`NSMutableArray`所有方法代理集合(类名是`NSKeyValueFastMutableArray`)，那么给这个代理集合发送`NSMutableArray`的方法，以`insertObject:in<Key>AtIndex:` , `removeObjectFrom<Key>AtIndex:` 或者 `insert<Key>AdIndexes` , `remove<Key>AtIndexes`组合的形式调用。
@@ -347,7 +347,7 @@ NSLog(@"@distinctUnionOfArrays = %@", collectedDistinctPayees);
 >
 > 你需要先看一下这张流程图，大致知道如何运转的，之后再看文字描述，仔细了解其机制
 
-![NSMutableSet取值底层实现](http://ww4.sinaimg.cn/large/006tNc79ly1g5owb7lu9ej31pi0i7jvm.jpg)
+![](http://ww2.sinaimg.cn/large/006tNc79ly1g63tz6puo1j31pi0i7gpu.jpg)
 
 1. 搜索`addObject<Key>Object:` , `remove<Key>Object:` 或者 `add<Key>` , `remove<Key>` 格式的方法
     如果至少找到一个`insert`方法和一个`remove`方法，那么同样返回一个可以响应`NSMutableSet`所有方法代理集合(类名是`NSKeyValueFastMutableSet2`)，那么给这个代理集合发送`NSMutableSet`的方法，以`addObject<Key>Object:` , `remove<Key>Object:` 或者 `add<Key>` , `remove<Key>`组合的形式调用。还有两个可选实现的接口：`intersect<Key> , set<Key>:` 。
