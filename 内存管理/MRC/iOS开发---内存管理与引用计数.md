@@ -1,4 +1,27 @@
-[TOC]
+
+
+   * [概要](#概要)
+   * [内存管理的思考方式](#内存管理的思考方式)
+      * [思考方式](#思考方式)
+      * [对象操作与OC中方法的对应](#对象操作与oc中方法的对应)
+      * [自己生成的对象，并自己持有](#自己生成的对象并自己持有)
+         * [alloc](#alloc)
+         * [new](#new)
+         * [copy与mutableCopy](#copy与mutablecopy)
+      * [不再需要自己持有的对象时释放](#不再需要自己持有的对象时释放)
+         * [release](#release)
+      * [无法释放非自己持有的对象](#无法释放非自己持有的对象)
+   * [alloc/retain/release/dealloc底层实现](#allocretainreleasedealloc底层实现)
+      * [GNU源码](#gnu源码)
+         * [alloc](#alloc-1)
+         * [retain](#retain)
+         * [release](#release-1)
+         * [dealloc](#dealloc)
+      * [苹果实现](#苹果实现)
+   * [autorelease](#autorelease)
+      * [什么是autorelease](#什么是autorelease)
+      * [GNU源码](#gnu源码-1)
+      * [苹果实现](#苹果实现-1)
 
 
 
