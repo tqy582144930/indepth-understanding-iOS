@@ -1,4 +1,17 @@
-[TOC]
+
+
+   * [iOS开发---图解消息发送机制](#ios开发---图解消息发送机制)
+      * [前言](#前言)
+         * [预备知识](#预备知识)
+         * [选择子SEL](#选择子sel)
+         * [objc_msgSend()的执行流程](#objc_msgsend的执行流程)
+      * [消息发送阶段](#消息发送阶段)
+      * [动态解析阶段](#动态解析阶段)
+         * [动态解析流程](#动态解析流程)
+         * [动态解析例子](#动态解析例子)
+      * [消息转发阶段](#消息转发阶段)
+         * [消息转发流程](#消息转发流程)
+         * [消息转发例子](#消息转发例子)
 
 # iOS开发---图解消息发送机制
 
@@ -764,25 +777,4 @@ kill(getpid(), 9);
 ```
 
 - 这里为什么只需要返回，返回值类型和参数类型？
-  - `person`对象调用`- (void)testAge:(int)age`这个过程，我们就需要知道方法调用者，方法名，方法参数。
-  - 而在Person.m中我们肯定知道方法调用者是person对象，方法名也知道是"testAge:"，那么现在不知道的就是方法参数了
-  - 那么这个方法签名就是表征这个方法参数的，包括返回值和参数，这样方法调用者，方法名和方法参数就都知道了。
-
-- 然后看`- (void)forwardInvocation:(NSInvocation *)anInvocation`的实现：
-
-```objective-c
-///NSInvocation封装了一个方法调用，包括：方法调用者，方法名，方法参数
-@  anInvocation.target 方法调用者
-@   anInvocation.selector 方法名
-@   [anInvocation getArgument:NULL atIndex:0];
-- (void)forwardInvocation:(NSInvocation *)anInvocation{
-    NSLog(@"%@ %@", anInvocation.target, NSStringFromSelector(anInvocation.selector));
-    int age;
-    [anInvocation getArgument:&age atIndex:2];
-    NSLog(@"%d", age);
-    //这行代码是把方法的调用者改变为student对象
-    [anInvocation invokeWithTarget:[[Student alloc] init]];
-}
-```
-
-- 在这个方法中有一个`NSInvocation`类型的`anInvocation`参数，这个参数就是表征一个方法调用的，我们可以通过这个参数获取`person`对象调用`- (void)testAge:(int)age`方法这个过程中的方法调用者，方法名，方法参数。然后我们可以通过修改方法调用者来达到消息转发的效果，这里是把方法调用者修改为了`student`对象。这样就完成了成功转发消息给`student`对象。
+  - `person`对象调用`- (void)testAge:(int)age`这个过程，我们就需要
