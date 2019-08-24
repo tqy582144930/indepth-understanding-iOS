@@ -110,7 +110,7 @@ int main(int argc, const char * argv[]) {
 
   > **我知道你们乍一看这张图就会觉得太难了，就不想再接着看了，一个优秀的程序员就必须有知难而上的精神，我会通过源码、文字、图片结合的方式，尽可能做到清楚、明了，让你顺利的掌握这个知识点。**
 
-![](http://ww4.sinaimg.cn/large/006y8mN6ly1g69wk3er18j30u012on67.jpg)
+![objc_msgSend流程 ](https://tva1.sinaimg.cn/large/006y8mN6ly1g6apw8y7ocj30u012on67.jpg)
 
 ## 消息发送阶段
 
