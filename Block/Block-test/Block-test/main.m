@@ -2,15 +2,18 @@
 //  main.m
 //  Block-test
 //
-//  Created by _祀梦 on 2019/9/8.
+//  Created by _祀梦 on 2019/9/9.
 //  Copyright © 2019 涂强尧. All rights reserved.
 //
 
-#import <UIKit/UIKit.h>
-#import "AppDelegate.h"
+#import <Foundation/Foundation.h>
 
-int main(int argc, char * argv[]) {
+int main(int argc, const char * argv[]) {
     @autoreleasepool {
-        return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
+        void (^blk)(void) = ^{
+            printf("Block\n");
+        };
+        blk();
     }
+    return 0;
 }
