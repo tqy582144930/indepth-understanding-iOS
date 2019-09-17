@@ -7,13 +7,19 @@
 //
 
 #import <Foundation/Foundation.h>
-
+static int vision = 5;
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
-        void (^blk)(void) = ^{
-            printf("Block\n");
+        static const int height = 170;
+        static int weight = 60;
+        void (^personInfoBlock)(void) = ^() {
+            weight = 70;
+            vision = 4;
+            NSLog(@"vision is %d, height is %d, weight is %d", vision, height, weight);
         };
-        blk();
+        weight = 80;
+        vision = 3;
+        personInfoBlock();
     }
     return 0;
 }
