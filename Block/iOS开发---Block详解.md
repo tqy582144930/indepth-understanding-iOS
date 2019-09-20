@@ -24,7 +24,25 @@
 
 ![Block语法](https://tva1.sinaimg.cn/large/006y8mN6ly1g756lmtruej30vo0braau.jpg)
 
-- 与c语言的区别
+- 也可以写省略格式的`Block`,比如省略返回值类型：
+
+```objective-c
+^ (int x) {
+  return x;
+}
+```
+
+> `Block`省略返回值类型时，如果表达式中有return语句就使用该返回值的类型，没有return语句就使用`void`类型。
+
+- 如果没有参数列表，也可以省略参数列表：
+
+```objective-c
+^ {
+  NSLog(@"hello world");
+}
+```
+
+- 与c语言很略的区别
 
 ### Block截取变量
 
