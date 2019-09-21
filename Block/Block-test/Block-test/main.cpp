@@ -106,6 +106,7 @@ struct __AtAutoreleasePool {
 };
 
 #define __OFFSETOFIVAR__(TYPE, MEMBER) ((long long) &((TYPE *)0)->MEMBER)
+static __NSConstantStringImpl __NSConstantStringImpl__var_folders_bp_sg6dyc5957s2j2v4l6z9k4dm0000gn_T_main_93fd4f_mi_0 __attribute__ ((section ("__DATA, __cfstring"))) = {__CFConstantStringClassReference,0x000007c8,"Block",5};
 
 
 
@@ -98283,7 +98284,7 @@ struct __main_block_impl_0 {
 };
 static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
 
-            printf("Block\n");
+            NSLog((NSString *)&__NSConstantStringImpl__var_folders_bp_sg6dyc5957s2j2v4l6z9k4dm0000gn_T_main_93fd4f_mi_0);
         }
 
 static struct __main_block_desc_0 {
