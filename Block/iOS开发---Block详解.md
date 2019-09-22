@@ -261,7 +261,9 @@ static struct __main_block_desc_0 {
 
 /* main 函数 */
 int main () {
+  	//myBlock的初始化
     void (*myBlock)(void) = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA));
+  	//myBlock的调用
     ((void (*)(__block_impl *))((__block_impl *)myBlock)->FuncPtr)((__block_impl *)myBlock);
 
     return 0;
@@ -297,10 +299,124 @@ struct __main_block_impl_0 {
 2. 成员变量 `Desc` 指针;
 3. `__main_block_impl_0` 构造函数。
 
-##### __block_impl 结构
+##### `struct __block_impl` 结构
 
-##### block Desc结构
+> 我们先看看第一部分`impl`是 `__block_impl`结构体类型的成员变量
+
+```objective-c
+/* 包含 Block 实际函数指针的结构体 */
+struct __block_impl {
+    void *isa;          // 用于保存 Block 结构体的实例指针
+    int Flags;          // 标志位
+    int Reserved;       // 今后版本升级所需的区域大小
+    void *FuncPtr;      // 函数指针
+};
+```
+
+- `__block_impl`包含了 Block 实际函数指针 `FuncPtr`，`FuncPtr`指针指向 Block 的主体部分，也就是 Block 对应 OC 代码中的 `^{ printf("myBlock\n"); };`部分。
+- 还包含了标志位 `Flags`，在实现`block`的内部操作时会用到
+- 今后版本升级所需的区域大小 `Reserved`
+- `__block_impl`结构体的实例指针 `isa`。
+
+##### `static struct __main_block_desc_0`结构
+
+> 第二部分 Desc 是指向的是 `__main_block_desc_0` 类型的结构体的指针型成员变量，`__main_block_desc_0` 结构体用来描述该 Block 的相关附加信息：
+
+```objective-c
+/* Block 附加信息结构体：包含今后版本升级所需区域大小，Block 的大小*/
+static struct __main_block_desc_0 {
+    size_t reserved;      // 今后版本升级所需区域大小
+    size_t Block_size;  // Block 大小
+} __main_block_desc_0_DATA = { 0, sizeof(struct __main_block_impl_0)};
+```
+
+##### `__main_block_impl_0` 构造函数
+
+> 第三部分是 `__main_block_impl_0` 结构体（Block 结构体） 的构造函数，负责初始化 `__main_block_impl_0` 结构体（Block 结构体） 的成员变量。
+
+```objective-c
+__main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int flags=0) {
+    impl.isa = &_NSConcreteStackBlock;
+    impl.Flags = flags;
+    impl.FuncPtr = fp;
+    Desc = desc;
+}
+```
+
+- 关于结构体构造函数中对各个成员变量的赋值，我们需要先来看看 `main()`函数中，对该构造函数的调用。
+
+```objective-c
+  void (*myBlock)(void) = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA));
+```
+
+- 我们可以把上面的代码稍微转换一下，去掉不同类型之间的转换，使之简洁一点：
+
+```objective-c
+struct __main_block_impl_0 temp = __main_block_impl_0(__main_block_func_0, &__main_block_desc_0_DATA);
+struct __main_block_impl_0 *myBlock = &temp;
+```
+
+- 这样，就容易看懂了。该代码将通过 `__main_block_impl_0`构造函数，生成的 `__main_block_impl_0`结构体（Block 结构体）类型实例的指针，赋值给 `__main_block_impl_0`结构体（Block 结构体）类型的指针变量 `myBlock`。
+
+可以看到， 调用 `__main_block_impl_0`构造函数的时候，传入了两个参数。
+
+1. 第一个参数：`__main_block_func_0`。
+
+   - 其实就是 `Block` 对应的主体部分，可以看到下面关于 `__main_block_func_0`结构体的定义 ，和` OC` 代码中 `^{ printf("myBlock\n"); };`部分具有相同的表达式。
+   - 这里参数中的 `__cself`是指向 Block 的值的指针变量，相当于 `OC` 中的 `self`。
+
+   ```objective-c
+   /* Block 主体部分结构体 */
+   static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
+       printf("myBlock\n");
+   }
+   ```
+
+2. 第二个参数：`__main_block_desc_0_DATA`：`__main_block_desc_0_DATA`包含该 Block 的相关信息。
+   我们再来结合之前的 `__main_block_impl_0`结构体定义。
+
+   - `__main_block_impl_0`结构体（Block 结构体）可以表述为：
+
+   ```objective-c
+   struct __main_block_impl_0 {
+       void *isa;          // 用于保存 Block 结构体的实例指针
+       int Flags;          // 标志位
+       int Reserved;       // 今后版本升级所需的区域大小
+       void *FuncPtr;      // 函数指针
+       struct __main_block_desc_0* Desc;      	// Desc：Desc 指针
+   };
+   ```
+
+   - `__main_block_impl_0`构造函数可以表述为：
+
+   ```objective-c
+   impl.isa = &_NSConcreteStackBlock;     // isa 保存 Block 结构体实例
+   impl.Flags = 0;        // 标志位赋值
+   impl.FuncPtr = __main_block_func_0;    // FuncPtr 保存 Block 结构体的主体部分
+   Desc = &__main_block_desc_0_DATA;      // Desc 保存 Block 结构体的附加信息
+   ```
 
 ##### 调用
+
+> 在分析了Block结构体和成员变量，现在我们看看main函数中是如何调用block的
+
+```objective-c
+((void (*)(__block_impl *))((__block_impl *)myBlock)->FuncPtr)((__block_impl *)myBlock);
+```
+
+- `myBlock`结构体的第一个成员变量为`__block_impl`，所以`myBlock`首地址，就是`__block_impl impl` 的首地址，即可以直接转换为`__block_impl` 类型
+- **(void (\*)(__block_impl \*))** 是`__block_impl` 中 `Func` 的类型
+- **((__block_impl \*)myBlock)->FuncPtr()** 调用函数
+- **((__block_impl \*)myBlock)** 函数参数
+
+##### Block的实质总结
+
+> 用一句话来说，Block是个对象
+
+- 在C语言的底层实现里，它是一个结构体。这个结构体相当于`objc_class`的类对象结构体，用`_NSConcreteStackBlock`对其中成员变量`isa`初始化，`_NSConcreteStackBlock`相当于`class_t`结构体实例(在我的理解中就是该 `block` 实例的元类)。在将 `Block` 作为`OC`对象处理时，关于该类的信息放置于`_NSConcreteStackBlock`中。
+
+> - 是对象：其内部第一个成员为 `isa` 指针；
+> - 封装了函数调用：`Block`内代码块，封装了函数调用，调用`Block`，就是调用该封装的函数；
+> - 执行上下文：`Block` 还有一个描述 `Desc`，该描述对象包含了`Block`的信息以及捕获变量的内存相关函数，及`Block`所在的环境上下文；
 
 ### Block截获变量实质
