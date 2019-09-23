@@ -420,3 +420,273 @@ struct __main_block_impl_0 *myBlock = &temp;
 > - 执行上下文：`Block` 还有一个描述 `Desc`，该描述对象包含了`Block`的信息以及捕获变量的内存相关函数，及`Block`所在的环境上下文；
 
 ### Block截获变量实质
+
+我们下面见根据变量修饰符，来探查 Block 如何捕获不同修饰符的类型变量。
+
+- auto：自动变量修饰符
+- static：静态修饰符
+- const：常量修饰符
+
+在这三种修饰符，我们又细分为**全局变量和局部变量**。
+
+#### Block截获自动局部变量的实质
+
+```objective-c
+// 使用 Blocks 截获局部变量值
+int c = 30;//全局变量
+- (void)useBlockInterceptLocalVariables {
+    int a = 10, b = 20;//局部变量
+
+    void (^myLocalBlock)(void) = ^{
+        printf("a = %d, b = %d, c = %d\n",a, b， c);
+    };
+  	void (^Block)(int, int, int) = ^(int a, int b, int c){
+        printf("a = %d, b = %d, c = %d\n",a, b, c);
+    };
+
+    myLocalBlock();    // 输出结果：a = 10, b = 20, c = 30
+
+    a = 20;
+    b = 30;
+
+    myLocalBlock();    // 输出结果：a = 10, b = 20, c = 30
+  	Block(a, b, c);				 // 输出结果：a = 20, b = 30, c = 30
+}
+```
+
+##### Block块中直接调用局部变量
+
+- 从中我们可以看出，我们在第一次调用 `myLocalBlock();` 之后已经重新给变量 `a`、变量 `b` 赋值了，但是第二次调用 `myLocalBlock();` 的时候，使用的还是之前对应变量的值。
+
+> 这是因为Block 语法的表达式使用的是它之前申明的局部变量`a`、变量`b`。Blocks中，Block表达式截获所使用的局部变量的值，保存了该变量的瞬时值。所以再第二次执行Block表达式的时候，即使已经改变了局部变量`a`和`b`的值，也不会影响Block表达式在执行时所保存的局部变量的瞬时值。
+>
+> 这就是Block变量截获局部变量值的特性
+
+- ⚠️：`Block` 语法表达式中没有使用的自动变量不会被追加到结构体中，`Blocks` 的自动变量截获只针对 `Block` 中**使用的**自动变量。
+
+- 可是，**为什么 Blocks 变量使用的是局部变量的瞬时值，而不是局部变量的当前值呢？**让我们看一下对应的`C++`代码
+
+```objective-c
+struct __main_block_impl_0 {
+    struct __block_impl impl;
+    struct __main_block_desc_0* Desc;
+    int a;
+    int b;
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int _a, int _b, int flags=0) : a(_a), b(_b) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
+};
+static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
+    int a = __cself->a; // bound by copy
+    int b = __cself->b; // bound by copy
+
+    printf("a = %d, b = %d, c = %d\n",a, b, c);
+}
+
+static struct __main_block_desc_0 {
+    size_t reserved;
+    size_t Block_size;
+} __main_block_desc_0_DATA = { 0, sizeof(struct __main_block_impl_0)};
+
+
+int main () {
+    int a = 10, b = 20;
+
+    void (*myLocalBlock)(void) = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA, a, b));
+    ((void (*)(__block_impl *))((__block_impl *)myLocalBlock)->FuncPtr)((__block_impl *)myLocalBlock);
+
+    a = 20;
+    b = 30;
+
+    ((void (*)(__block_impl *))((__block_impl *)myLocalBlock)->FuncPtr)((__block_impl *)myLocalBlock);
+}
+```
+
+1. 可以看到 `__main_block_impl_0` 结构体（Block 结构体）中多了两个成员变量 `a` 和 `b`，这两个变量就是 Block 截获的局部变量。 `a` 和 `b` 的值来自与 `__main_block_impl_0` 构造函数中传入的值。
+
+```objective-c
+  struct __main_block_impl_0 {
+        struct __block_impl impl;
+        struct __main_block_desc_0* Desc;
+        int a;    // 增加的成员变量 a
+        int b;    // 增加的成员变量 b
+        __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int _a, int _b, int flags=0) : a(_a), b(_b) {    
+            impl.isa = &_NSConcreteStackBlock;
+            impl.Flags = flags;
+            impl.FuncPtr = fp;
+            Desc = desc;
+        }
+    };
+```
+
+2. `还可以看出 __main_block_func_0`（保存 `Block` 主体部分的结构体）中，变量 `a、b` 的值使用的 `__cself `获取的值。
+   而 `__cself->a`、`__cself->b` 是通过值传递的方式传入进来的，而不是通过指针传递。这也就说明了 `a`、`b` 只是 `Block` 内部的变量，改变 `Block` 外部的局部变量值，并不能改变 `Block` 内部的变量值。
+
+```objective-c
+static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
+    int a = __cself->a; // bound by copy
+    int b = __cself->b; // bound by copy
+    printf("a = %d, b = %d\n",a, b);
+}
+```
+
+3. 我们可以看出全局变量并没有存储在Block的结构体中，而是在调用的时候通过直接访问的方式来调用。
+
+- 下面用一张图我们把上面所说的全局作用域和局部作用域做一个总结
+
+| 变量类型 | 抓获到Block对象内部 | 访问方式 |
+| :------: | :-----------------: | :------: |
+| 局部变量 |                     |  指传递  |
+| 全局变量 |                     | 直接访问 |
+
+##### Block通过传值间接访问局部变量
+
+```objective-c
+// 使用 Blocks 截获局部变量值
+int c = 30;
+- (void)useBlockInterceptLocalVariables {
+    int a = 10, b = 20;
+
+  	void (^Block)(void) = ^(int a, int b){
+        printf("a = %d, b = %d\n",a, b);
+    };
+
+    a = 20;
+    b = 30;
+  	Block(a,b);				 // 输出结果：a = 20, b = 30, c = 30
+}
+```
+
+- 我们来看看直接传值和通过`block`截获局部变量的区别
+
+```objective-c
+struct __main_block_impl_1 {
+    struct __block_impl impl;
+    struct __main_block_desc_1* Desc;
+    __main_block_impl_1(void *fp, struct __main_block_desc_1 *desc, int flags=0) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
+};
+
+static void __main_block_func_1(struct __main_block_impl_1 *__cself, int a, int b, int c) {
+
+    printf("a = %d, b = %d, c = %d\n",a, b, c);
+}
+
+static struct __main_block_desc_1 {
+    size_t reserved;
+    size_t Block_size;
+} __main_block_desc_1_DATA = { 0, sizeof(struct __main_block_impl_1)};
+
+
+int main(int argc, const char * argv[]) {
+    /* @autoreleasepool */ { __AtAutoreleasePool __autoreleasepool; 
+        int a = 10, b = 20;
+                            
+        void (*Block)(int,int) = ((void (*)(int, int))&__main_block_impl_1((void *)__main_block_func_1, &__main_block_desc_1_DATA));
+
+        a = 20;
+        b = 30;
+
+        ((void (*)(__block_impl *, int, int))((__block_impl *)Block)->FuncPtr)((__block_impl *)Block, a, b, c);
+    }
+    return 0;
+}
+```
+
+1. 可以看见`__main_block_impl_1`结构体中没有变量`a`、变量`b`,说明通过直接传值的方式，变量并没有存进`Block`的结构体中。
+2. 在`__main_block_func_1`函数中，发现参数列表中多了`int a, int b`这两个参数，还有调用`Block`的时候，直接把变量`a`、`b`的值传入进去了。
+
+#### Block截获static修饰变量的实质
+
+下面我们定义了三个变量：
+
+- 全局
+  - 变量：c
+- 局部
+  - 常量：a
+  - 变量：b
+
+```objective-c
+static int c = 30;
+- (void)useBlockInterceptLocalVariables {
+    static const int a = 10;
+  	static int b = 20;
+
+  	void (^Block)(void) = ^{
+      	b = 50;
+      	c = 60;
+        printf("a = %d, b = %d, c = %d\n",a, b, c);
+    };
+  
+    b = 30;
+    c = 40;
+  	Block();				 // 输出结果：a = 10, b = 50, c = 60
+}
+```
+
+- 从以上测试结果我们可以得出：
+  - `Block` 对象能获取最新的**静态全局变量**和**静态局部变量**；
+  - **静态局部常量**由于值不会更改，故没有变化；
+
+```objective-c
+static int c = 30;//全局静态变量
+
+struct __main_block_impl_0 {
+    struct __block_impl impl;
+    struct __main_block_desc_0* Desc;
+    int *b;//捕获变量，获取变量地址
+    const int *a;//捕获变量，获取变量地址
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int *_b, const int *_a, int flags=0) : b(_b), a(_a) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
+};
+
+static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
+  	//2.通过Block对象获取到b和a的指针
+    int *b = __cself->b; // bound by copy
+    const int *a = __cself->a; // bound by copy
+		//通过b指针，修改b指向的值
+    (*b) = 50;
+    c = 60;
+    printf("a = %d, b = %d, c = %d\n",(*a), (*b), c);
+}
+
+static struct __main_block_desc_0 {
+    size_t reserved;
+    size_t Block_size;
+} __main_block_desc_0_DATA = { 0, sizeof(struct __main_block_impl_0)};
+
+int main(int argc, const char * argv[]) {
+    /* @autoreleasepool */ { __AtAutoreleasePool __autoreleasepool;
+        static const int a = 10;
+        static int b = 20;
+                            
+				//1.传入&a, &b地址进行Blcok对象的初始化
+        void (*Block)(void) = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA, &b, &a));
+
+        b = 30;
+        c = 40;
+        ((void (*)(__block_impl *))((__block_impl *)Block)->FuncPtr)((__block_impl *)Block);
+    }
+    return 0;
+}
+```
+
+
+
+### __block修饰符
+
+#### __blcok修饰局部变量
+
+#### __block修饰对象
+
