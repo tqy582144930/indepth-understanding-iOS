@@ -98269,15 +98269,13 @@ typedef void (*NSUserAutomatorTaskCompletionHandler)(id _Nullable result, NSErro
 
 
 
-static int c = 30;
-
+static int a = 10;
 
 struct __main_block_impl_0 {
     struct __block_impl impl;
     struct __main_block_desc_0* Desc;
-    int *b;
-    const int *a;
-    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int *_b, const int *_a, int flags=0) : b(_b), a(_a) {
+    const int b;
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, const int _b, int flags=0) : b(_b) {
         impl.isa = &_NSConcreteStackBlock;
         impl.Flags = flags;
         impl.FuncPtr = fp;
@@ -98286,12 +98284,8 @@ struct __main_block_impl_0 {
 };
 
 static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
-    int *b = __cself->b; // bound by copy
-    const int *a = __cself->a; // bound by copy
-
-    (*b) = 50;
-    c = 60;
-    printf("a = %d, b = %d, c = %d\n",(*a), (*b), c);
+    const int b = __cself->b; // bound by copy
+    printf("a = %d, b = %d\n",a, b);
 }
 
 static struct __main_block_desc_0 {
@@ -98300,15 +98294,15 @@ static struct __main_block_desc_0 {
 } __main_block_desc_0_DATA = { 0, sizeof(struct __main_block_impl_0)};
 
 int main(int argc, const char * argv[]) {
-    /* @autoreleasepool */ { __AtAutoreleasePool __autoreleasepool;
-        static const int a = 10;
-        static int b = 20;
+    /* @autoreleasepool */ { __AtAutoreleasePool __autoreleasepool; 
 
-        void (*Block)(void) = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA, &b, &a));
 
-        b = 30;
-        c = 40;
+        const int b = 20;
+
+        void (*Block)(void) = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA, b));
+
         ((void (*)(__block_impl *))((__block_impl *)Block)->FuncPtr)((__block_impl *)Block);
+
     }
     return 0;
 }

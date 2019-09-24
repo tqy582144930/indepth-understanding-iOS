@@ -419,6 +419,66 @@ struct __main_block_impl_0 *myBlock = &temp;
 > - 封装了函数调用：`Block`内代码块，封装了函数调用，调用`Block`，就是调用该封装的函数；
 > - 执行上下文：`Block` 还有一个描述 `Desc`，该描述对象包含了`Block`的信息以及捕获变量的内存相关函数，及`Block`所在的环境上下文；
 
+### Block的类型
+
+> 前面已经说过了，Block的本质就是一个OC对象，既然它是OC对象，那么它就有类型。
+>
+> 准备工作：
+>
+> - 先把ARC关掉，因为ARC帮我们做了太多的事，不方便我们观察结果。关掉ARC的方法在Build Settings里面搜索Objective-C Automatic Reference Counting，把这一项置为NO。
+
+```objective-c
+static int weight = 20;
+
+int main(int argc, char * argv[]) {
+    @autoreleasepool {
+        int age = 10;
+        void (^block)(void) = ^{
+            NSLog(@"%d %d", height, age);
+        };
+        
+        NSLog(@"%@\n %@\n %@\n %@", [block class], [[block class] superclass], [[[block class] superclass] superclass], [[[[block class] superclass] superclass] superclass]);
+        
+        return 0;
+    }
+}
+
+//打印结果
+ __NSStackBlock__
+ __NSStackBlock
+ NSBlock
+ NSObject
+```
+
+- 这说明上面定义的这个`block`的类型是`NSStackBlock`，并且它最终继承自`NSObject`也说明`Block`的本质是`OC`对象。
+
+#### Block的三种类型
+
+- **Block有三种类型，分别是NSGlobalBlock,MallocBlock,NSStackBlock。**
+  这三种类型的`Block`对象的存储区域如下：
+
+| 类                                      | 对象的存储域            |
+| --------------------------------------- | ----------------------- |
+| NSStackBlock（_NSConcreteStackBlock）   | 栈                      |
+| NSGlobalBlock（_NSConcreteGlobalBlock） | 程序的数据区域(.data区) |
+| NSMallocBlock（_NSConcreteMallocBlock） | 堆                      |
+
+> **截获了自动变量的Block是NSStackBlock类型，没有截获自动变量的Block则是NSGlobalStack类型,NSStackBlock类型的Block进行copy操作之后其类型变成了NSMallocBlock类型。**
+
+- 下面我们用一张图来看一下不同block的存储区域
+
+![Block的存储区域](https://tva1.sinaimg.cn/large/006y8mN6ly1g7ay95zsxrj30ko0frq5d.jpg)
+
+- 从上图可以发现，根据`block`的类型不同，block存放在不同的区域中。
+  1. 数据段中的`__NSGlobalBlock__`直到程序结束才会被回收，不过我们很少使用到`__NSGlobalBlock__`类型的`block`，因为这样使用`block`并没有什么意义。
+  2. `__NSStackBlock__`类型的`block`存放在栈中，我们知道栈中的内存由系统自动分配和释放，作用域执行完毕之后就会被立即释放，而在相同的作用域中定义`block`并且调用`block`似乎也多此一举。
+  3. `__NSMallocBlock__`是在平时编码过程中最常使用到的。存放在堆中需要我们自己进行内存管理。
+
+1. _NSConcreteGlobalBlock
+
+2. _NSConcreteStackBlock
+3. _NSConcreteMallocBlock
+
 ### Block截获变量实质
 
 我们下面见根据变量修饰符，来探查 Block 如何捕获不同修饰符的类型变量。
@@ -634,6 +694,7 @@ static int c = 30;
 - 从以上测试结果我们可以得出：
   - `Block` 对象能获取最新的**静态全局变量**和**静态局部变量**；
   - **静态局部常量**由于值不会更改，故没有变化；
+- 我们来看看`c++`代码，到底发生了什么
 
 ```objective-c
 static int c = 30;//全局静态变量
@@ -682,7 +743,112 @@ int main(int argc, const char * argv[]) {
 }
 ```
 
+1. 可以看到在 `__main_block_impl_0` 结构体中，静态局部变量`static int b`以指针的形式添加为成员变量，而静态局部常量`static const int a`以`const int *`的形式添加为成员变量。而全局静态变量`static int c` 并没有添加为成员变量
 
+```objective-c
+struct __main_block_impl_0 {
+    struct __block_impl impl;
+    struct __main_block_desc_0* Desc;
+    int *b;//捕获变量，获取变量地址
+    const int *a;//捕获变量，获取变量地址
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int *_b, const int *_a, int flags=0) : b(_b), a(_a) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
+};
+```
+
+2. 再来看看 `__main_block_func_0` 结构体部分，静态全局变量`static int c`是直接访问的，静态局部变量`static int b`是通过『指针传递』的方式进行访问，静态局部常量`static const int a`也是通过『指针传递』的方式进行访问，但是它是通过`const`修饰的无法进行赋值操作。
+
+```objective-c
+static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
+  	//2.通过Block对象获取到b和a的指针
+    int *b = __cself->b; // bound by copy
+    const int *a = __cself->a; // bound by copy
+		//通过b指针，修改b指向的值
+    (*b) = 50;
+    c = 60;
+    printf("a = %d, b = %d, c = %d\n",(*a), (*b), c);
+}
+```
+
+- 我们为什么能获取 `static` 变量最新的值？
+
+  1. `static` 修饰的，其作用区域不管是全局还是局部，不管是常量还是变量，**均存储在全局存储区中**，存在全局存储区，该地址在程序运行过程中一直不会改变，所以能访问最新值。
+  2. `static` 修饰后：
+
+  - 全局变量，**直接访问**。
+  - 局部变量，指针访问。其中在局部变量中，又有局部静态常量，即被` const` 修饰的。
+    - `const` 存放在 `text` 段中，即使被 `static` 同时修饰，也存放` text` 中的常量区；
+
+#### Block截获const修饰变量的实质
+
+- 如下定义：
+  - `const` 全局变量：a
+  - `const` 局部变量：b
+
+```objective-c
+const int a = 10;
+- (void)useBlockInterceptLocalVariables {
+  	const int b = 20;
+
+  	void (^Block)(void) = ^{
+        printf("a = %d, b = %d\n",a, b);
+    };
+  
+  	Block();				 // 输出结果：a = 10, b = 20
+}
+```
+
+- 看看转换后的`c++`代码
+
+```objective-c
+static int a = 10;
+
+struct __main_block_impl_0 {
+    struct __block_impl impl;
+    struct __main_block_desc_0* Desc;
+    const int b;
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, const int _b, int flags=0) : b(_b) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
+};
+
+static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
+    const int b = __cself->b; // bound by copy
+    printf("a = %d, b = %d\n",a, b);
+}
+
+static struct __main_block_desc_0 {
+    size_t reserved;
+    size_t Block_size;
+} __main_block_desc_0_DATA = { 0, sizeof(struct __main_block_impl_0)};
+
+int main(int argc, const char * argv[]) {
+    /* @autoreleasepool */ { __AtAutoreleasePool __autoreleasepool; 
+        const int b = 20;
+        void (*Block)(void) = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA, b));
+        ((void (*)(__block_impl *))((__block_impl *)Block)->FuncPtr)((__block_impl *)Block);
+
+    }
+    return 0;
+}
+```
+
+- 从上面看出：
+  - `const` 全局变量**直接访问**；
+  - `const` 局部变量，其实仍然是 `auto` 修饰，**值传递**；
+
+- 最后我们用一张图来总结一下这一节所学的内容
+
+![Block不同作用域的访问方式](https://tva1.sinaimg.cn/large/006y8mN6ly1g7avqsahmhj312h0h90vn.jpg)
+
+### Block截获对象实质
 
 ### __block修饰符
 
