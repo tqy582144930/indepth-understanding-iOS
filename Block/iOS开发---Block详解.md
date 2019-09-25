@@ -474,10 +474,84 @@ int main(int argc, char * argv[]) {
   2. `__NSStackBlock__`类型的`block`存放在栈中，我们知道栈中的内存由系统自动分配和释放，作用域执行完毕之后就会被立即释放，而在相同的作用域中定义`block`并且调用`block`似乎也多此一举。
   3. `__NSMallocBlock__`是在平时编码过程中最常使用到的。存放在堆中需要我们自己进行内存管理。
 
-1. _NSConcreteGlobalBlock
+1. **_NSConcreteGlobalBlock**
 
-2. _NSConcreteStackBlock
-3. _NSConcreteMallocBlock
+   - 在以下两种情况下使用 `Block` 的时候，`Block` 为 `NSConcreteGlobalBlock`类对象。
+
+   1. 记述全局变量的地方，使用 `Block` 语法时；
+   2. `Block` 语法的表达式中没有截获的自动变量时。
+
+   - `NSConcreteGlobalBlock`类的 `Block` 存储在**『程序的数据区域』**。因为存放在程序的数据区域，所以即使在变量的作用域外，也可以通过指针安全的使用。
+
+   - 记述全局变量的地方，使用 Block 语法示例代码：
+
+   ```objective-c
+   void (^myGlobalBlock)(void) = ^{
+       printf("GlobalBlock\n");
+   };
+   
+   int main() {
+       myGlobalBlock();
+   
+       return 0;
+   }
+   ```
+
+   通过对应 `C++` 源码，我们可以发现：`Block` 结构体的成员变量 `isa`赋值为：`impl.isa = &_NSConcreteGlobalBlock;`，说明该 `Block` 为 `NSConcreteGlobalBlock`类对象。
+
+2. **_NSConcreteStackBlock**
+
+除了**_NSConcreteGlobalBlock**中提到的两种情形，其他情形下创建的 `Block` 都是 `NSConcreteStackBlock`对象，平常接触的 `Block` 大多属于 `NSConcreteStackBlock`对象。
+
+`NSConcreteStackBlock`类的 `Block` 存储在『栈区』的。如果其所属的变量作用域结束，则该 Block 就会被废弃。如果 Block 使用了 `__block`变量，则当 `__block`变量的作用域结束，则 `__block`变量同样被废弃。
+
+![栈上Block随着作用域结束而废弃](https://tva1.sinaimg.cn/large/006y8mN6ly1g7azdcvz6pj31ty0sok3o.jpg)
+
+3. **_NSConcreteMallocBlock**
+
+为了解决栈区上的 `Block` 在变量作用域结束被废弃这一问题，`Block` 提供了 **『复制』**功能。可以将 Block 对象和 `__block`变量从栈区复制到堆区上。当 `Block` 从栈区复制到堆区后，即使栈区上的变量作用域结束时，堆区上的 `Block` 和 `__block`变量仍然可以继续存在，也可以继续使用。
+
+![Block从栈复制到堆](https://tva1.sinaimg.cn/large/006y8mN6ly1g7azh00rhcj31b40u0api.jpg)
+
+此时，『堆区』上的 Block 为 `NSConcreteMallocBlock` 对象，Block 结构体的成员变量 isa 赋值为：`impl.isa = &_NSConcreteMallocBlock;`
+
+那么，什么时候才会将 Block 从栈区复制到堆区呢？
+
+这就涉及到了 Block 的自动拷贝和手动拷贝。
+
+#### Block的自动拷贝和手动拷贝
+
+##### Block的自动拷贝
+
+在使用` ARC` 时，大多数情形下编译器会自动进行判断，自动生成将 `Block` 从栈上复制到堆上的代码：
+
+1. 将 `Block` 作为函数返回值返回时，会自动拷贝；
+2. 向方法或函数的参数中传递 `Block` 时，使用以下两种方法的情况下，会进行自动拷贝，否则就需要手动拷贝：
+   1. `Cocoa` 框架的方法且方法名中含有 `usingBlock`等时；
+   2. `Grand Central Dispatch（GCD）`的 API。
+
+##### Block的手动拷贝
+
+我们可以通过『copy 实例方法（即 `alloc / new / copy / mutableCopy`）』来对 `Block` 进行手动拷贝。当我们不确定 `Block` 是否会被遗弃，需不需要拷贝的时候，直接使用 `copy` 实例方法即可，不会引起任何的问题。
+
+关于 Block 不同类的拷贝效果总结如下：
+
+|        Block 类        |    存储区域    |   拷贝效果   |
+| :--------------------: | :------------: | :----------: |
+| _NSConcreteStackBlock  |      栈区      | 从栈拷贝到堆 |
+| _NSConcreteGlobalBlock | 程序的数据区域 |   不做改变   |
+| _NSConcreteMallocBlock |      堆区      | 引用计数增加 |
+
+##### __block变量的拷贝
+
+在使用 `__block`变量的 `Block` 从栈复制到堆上时，`__block`变量也会受到如下影响：
+
+| __block 变量的配置存储区域 |   Block 从栈复制到堆时的影响    |
+| :------------------------: | :-----------------------------: |
+|            堆区            | 从栈复制到堆，并被 Block 所持有 |
+|            栈区            |         被 Block 所持有         |
+
+当然，如果不再有 `Block` 引用该 `__block`变量，那么 `__block`变量也会被废除。
 
 ### Block截获变量实质
 
@@ -850,9 +924,14 @@ int main(int argc, const char * argv[]) {
 
 ### Block截获对象实质
 
-### __block修饰符
 
-#### __blcok修饰局部变量
 
-#### __block修饰对象
+### Blocks内改写被截获变量的值的方式
 
+#### __block修饰符
+
+##### __blcok修饰局部变量
+
+##### __block修饰对象
+
+#### 更改特殊区域变量值
