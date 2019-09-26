@@ -106,6 +106,13 @@ struct __AtAutoreleasePool {
 };
 
 #define __OFFSETOFIVAR__(TYPE, MEMBER) ((long long) &((TYPE *)0)->MEMBER)
+static void __Block_byref_id_object_copy_131(void *dst, void *src) {
+ _Block_object_assign((char*)dst + 40, *(void * *) ((char*)src + 40), 131);
+}
+static void __Block_byref_id_object_dispose_131(void *src) {
+ _Block_object_dispose(*(void * *) ((char*)src + 40), 131);
+}
+static __NSConstantStringImpl __NSConstantStringImpl__var_folders_bp_sg6dyc5957s2j2v4l6z9k4dm0000gn_T_main_1f2ea2_mi_0 __attribute__ ((section ("__DATA, __cfstring"))) = {__CFConstantStringClassReference,0x000007c8,"person is %@",12};
 
 
 
@@ -98269,40 +98276,81 @@ typedef void (*NSUserAutomatorTaskCompletionHandler)(id _Nullable result, NSErro
 
 
 
-static int a = 10;
+#pragma clang assume_nonnull begin
+
+
+#ifndef _REWRITER_typedef_Person
+#define _REWRITER_typedef_Person
+typedef struct objc_object Person;
+typedef struct {} _objc_exc_Person;
+#endif
+
+struct Person_IMPL {
+	struct NSObject_IMPL NSObject_IVARS;
+};
+
+// @property(nonatomic, assign) int age;
+/* @end */
+
+#pragma clang assume_nonnull end
+
+struct __Block_byref_person_0 {
+    void *__isa;
+    __Block_byref_person_0 *__forwarding;
+    int __flags;
+    int __size;
+    void (*__Block_byref_id_object_copy)(void*, void*);
+    void (*__Block_byref_id_object_dispose)(void*);
+    Person *person;
+};
 
 struct __main_block_impl_0 {
     struct __block_impl impl;
     struct __main_block_desc_0* Desc;
-    const int b;
-    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, const int _b, int flags=0) : b(_b) {
+    __Block_byref_person_0 *person; // by ref
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, __Block_byref_person_0 *_person, int flags=0) : person(_person->__forwarding) {
         impl.isa = &_NSConcreteStackBlock;
         impl.Flags = flags;
         impl.FuncPtr = fp;
         Desc = desc;
     }
 };
-
 static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
-    const int b = __cself->b; // bound by copy
-    printf("a = %d, b = %d\n",a, b);
+    __Block_byref_person_0 *person = __cself->person; // bound by ref
+
+    (person->__forwarding->person) = ((Person *(*)(id, SEL))(void *)objc_msgSend)((id)((Person *(*)(id, SEL))(void *)objc_msgSend)((id)objc_getClass("Person"), sel_registerName("alloc")), sel_registerName("init"));
+    NSLog((NSString *)&__NSConstantStringImpl__var_folders_bp_sg6dyc5957s2j2v4l6z9k4dm0000gn_T_main_1f2ea2_mi_0, (person->__forwarding->person));
+}
+static void __main_block_copy_0(struct __main_block_impl_0*dst, struct __main_block_impl_0*src) {
+    _Block_object_assign((void*)&dst->person, (void*)src->person, 8/*BLOCK_FIELD_IS_BYREF*/);
+}
+
+static void __main_block_dispose_0(struct __main_block_impl_0*src) {
+    _Block_object_dispose((void*)src->person, 8/*BLOCK_FIELD_IS_BYREF*/);
 }
 
 static struct __main_block_desc_0 {
     size_t reserved;
     size_t Block_size;
-} __main_block_desc_0_DATA = { 0, sizeof(struct __main_block_impl_0)};
-
+    void (*copy)(struct __main_block_impl_0*, struct __main_block_impl_0*);
+    void (*dispose)(struct __main_block_impl_0*);
+} __main_block_desc_0_DATA = { 0, sizeof(struct __main_block_impl_0), __main_block_copy_0, __main_block_dispose_0};
 int main(int argc, const char * argv[]) {
     /* @autoreleasepool */ { __AtAutoreleasePool __autoreleasepool; 
+       __attribute__((__blocks__(byref)))
+        __Block_byref_person_0 person = {
+           (void*)0,
+           (__Block_byref_person_0 *)&person,
+           33554432,
+           sizeof(__Block_byref_person_0), __Block_byref_id_object_copy_131,
+           __Block_byref_id_object_dispose_131,
+           ((Person *(*)(id, SEL))(void *)objc_msgSend)((id)((Person *(*)(id, SEL))(void *)objc_msgSend)((id)objc_getClass("Person"),
+           sel_registerName("alloc")),
+           sel_registerName("init"))
+       };
 
-
-        const int b = 20;
-
-        void (*Block)(void) = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA, b));
-
-        ((void (*)(__block_impl *))((__block_impl *)Block)->FuncPtr)((__block_impl *)Block);
-
+       void(*block)(void) = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA, (__Block_byref_person_0 *)&person, 570425344));
+        ((void (*)(__block_impl *))((__block_impl *)block)->FuncPtr)((__block_impl *)block);
     }
     return 0;
 }

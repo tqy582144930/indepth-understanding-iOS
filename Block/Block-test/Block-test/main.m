@@ -7,19 +7,23 @@
 //
 
 #import <Foundation/Foundation.h>
- static int a = 10;
+#import "Person.h"
+
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
-       
-      
-            const int b = 20;
-            
-            void (^Block)(void) = ^{
-                printf("a = %d, b = %d\n",a, b);
-            };
-            
-            Block();                 // 输出结果：a = 10, b = 50, c = 60
-        
+       __block int age = 20;
+       __block Person *person = [[Person alloc] init];
+
+       void(^block)(void) = ^ {
+           age = 30;
+           person = [[Person alloc] init];
+           NSLog(@"malloc address: %p %p", &age, person);
+           NSLog(@"malloc age is %d", age);
+           NSLog(@"person is %@", person);
+       };
+       block();
+       NSLog(@"stack address: %p %p", &age, person);
+       NSLog(@"stack age is %d", age);
     }
     return 0;
 }

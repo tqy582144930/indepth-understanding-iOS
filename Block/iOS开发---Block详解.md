@@ -529,6 +529,7 @@ int main(int argc, char * argv[]) {
 2. 向方法或函数的参数中传递 `Block` 时，使用以下两种方法的情况下，会进行自动拷贝，否则就需要手动拷贝：
    1. `Cocoa` 框架的方法且方法名中含有 `usingBlock`等时；
    2. `Grand Central Dispatch（GCD）`的 API。
+3. 将 `Block` 赋值给类的附有 `__strong`修饰符的`id`类型或 Block 类型成员变量时
 
 ##### Block的手动拷贝
 
@@ -924,14 +925,795 @@ int main(int argc, const char * argv[]) {
 
 ### Block截获对象实质
 
+- 在前一节我们学习了`Block`如何截获基本类型，这一节我们主要学习截获对象类型的`auto`变量
 
+```objective-c
+Person *person = [[Person alloc] init];
+person.age = 20;
+void (^block)(void) = ^{
+  NSLog(@"age = %d", person.age);
+};
+block();
+```
+
+- 根据`Block`捕获基本变量的规律，针对对象，仍然适用
+  - `auto` 变量捕获后，`Block` 中变量的类型和变量原类型一致；
+  - `static` 变量捕获后，`Block` 对应的变量是对应变量的指针类型；
+
+那么，`auto` 对象与基本类型在 `Block` 内部有什么区别呢。
+
+- 我们把上述代换转换成`C++`
+
+```objective-c
+struct __main_block_impl_0 {
+    struct __block_impl impl;
+    struct __main_block_desc_0* Desc;
+    Person *person;
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, Person *_person, int flags=0) : person(_person) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
+};
+static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
+    Person *person = __cself->person; // bound by copy
+
+    NSLog((NSString *)&__NSConstantStringImpl__var_folders_bp_sg6dyc5957s2j2v4l6z9k4dm0000gn_T_main_f5936b_mi_0, ((int (*)(id, SEL))(void *)objc_msgSend)((id)person, sel_registerName("age")));
+}
+
+static void __main_block_copy_0(struct __main_block_impl_0*dst, struct __main_block_impl_0*src) {
+  	_Block_object_assign((void*)&dst->person, (void*)src->person, 3/*BLOCK_FIELD_IS_OBJECT*/);
+}
+
+static void __main_block_dispose_0(struct __main_block_impl_0*src) {
+    _Block_object_dispose((void*)src->person, 3/*BLOCK_FIELD_IS_OBJECT*/);
+}
+
+static struct __main_block_desc_0 {
+    size_t reserved;
+    size_t Block_size;
+    void (*copy)(struct __main_block_impl_0*, struct __main_block_impl_0*);
+    void (*dispose)(struct __main_block_impl_0*);
+} __main_block_desc_0_DATA = { 0, sizeof(struct __main_block_impl_0), __main_block_copy_0, __main_block_dispose_0};
+
+int main(int argc, const char * argv[]) {
+    /* @autoreleasepool */ { __AtAutoreleasePool __autoreleasepool; 
+        Person *person = ((Person *(*)(id, SEL))(void *)objc_msgSend)((id)((Person *(*)(id, SEL))(void *)objc_msgSend)((id)objc_getClass("Person"), sel_registerName("alloc")), sel_registerName("init"));
+        ((void (*)(id, SEL, int))(void *)objc_msgSend)((id)person, sel_registerName("setAge:"), 20);
+        void (*block)(void) = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA, person, 570425344));
+        ((void (*)(__block_impl *))((__block_impl *)block)->FuncPtr)((__block_impl *)block);
+    }
+    return 0;
+}
+```
+
+1. 我们看到`__main_block_impl_0`结构体中多了一个一个成员变量`Person *person`，因为`person`是自动变量，所以这里捕获了自动变量`person`作为`_main_block_impl_0`结构体的成员变量。**而且还要注意的是，由于是自动变量，所以在block外面，自动变量是什么类型，在结构体里面作为成员变量就是什么类型。person在结构体外面作为自动变量是指针类型，所以作为结构体里面的成员变量也是指针类型。**
+
+```objective-c
+struct __main_block_impl_0 {
+    struct __block_impl impl;
+    struct __main_block_desc_0* Desc;
+    Person *person;
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, Person *_person, int flags=0) : person(_person) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
+};
+```
+
+2. 我们看到`__main_block_desc_0`结构中多了两个函数指针`void (*copy)`和`void (*dispose)`
+
+```objective-c
+static void __main_block_copy_0(struct __main_block_impl_0*dst, struct __main_block_impl_0*src) {
+  	_Block_object_assign((void*)&dst->person, (void*)src->person, 3/*BLOCK_FIELD_IS_OBJECT*/);
+}
+
+static void __main_block_dispose_0(struct __main_block_impl_0*src) {
+    _Block_object_dispose((void*)src->person, 3/*BLOCK_FIELD_IS_OBJECT*/);
+}
+```
+
+针对这两个函数，它们的作用就是：
+
+| 函数                   | 作用                                                         | 调用时机                |
+| :--------------------- | :----------------------------------------------------------- | :---------------------- |
+| __main_block_copy_0    | 调用 `_Block_object_assign`，相当于 **retain**，将对象赋值在对象类型的结构体变量 `__main_block_impl_0` 中。 | 栈上的 Block 复制到堆时 |
+| __main_block_dispose_0 | 调用 `_Block_object_dispose`，相当于 **release**，释放赋值在对象类型的结构体变量中的对象。 | 堆上 Block 被废弃时     |
 
 ### Blocks内改写被截获变量的值的方式
 
+> 在Block中修饰被截获变量的值只有一下两种情况，我们先分析通过`__block`修饰符来修改截获变量的方式
+
 #### __block修饰符
+
+- `__block 说明符`类似于 `static`、`auto`、`register` 说明符，它们用于指定将变量值设置到哪个存储域中。例如`auto` 表示作为自动变量存储在**栈**中， `static`表示作为静态变量存储在**数据区**中。
+
+> `__block`修饰符又分为修饰局部变量和修饰对象
 
 ##### __blcok修饰局部变量
 
+```objective-c
+- (void)useBlockQualifierChangeLocalVariables {
+    __block int a = 10, b = 20;
+
+    void (^myLocalBlock)(void) = ^{
+        a = 20;
+        b = 30;
+
+        printf("a = %d, b = %d\n",a, b);    // 输出结果：a = 20, b = 30
+    };
+
+    myLocalBlock();
+}
+```
+
+- 从中我们可以发现：通过 `__block` 修饰的局部变量，可以在 Block 的主体部分中改变值。
+
+- 我们来转换下源码，分析一下：
+
+```objective-c
+struct __Block_byref_a_0 {
+    void *__isa;
+    __Block_byref_a_0 *__forwarding;
+    int __flags;
+    int __size;
+    int a;
+};
+
+struct __Block_byref_b_1 {
+    void *__isa;
+    __Block_byref_b_1 *__forwarding;
+    int __flags;
+    int __size;
+    int b;
+};
+
+struct __main_block_impl_0 {
+    struct __block_impl impl;
+    struct __main_block_desc_0* Desc;
+    __Block_byref_a_0 *a; // by ref
+    __Block_byref_b_1 *b; // by ref
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, __Block_byref_a_0 *_a, __Block_byref_b_1 *_b, int flags=0) : a(_a->__forwarding), b(_b->__forwarding) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
+};
+
+static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
+    __Block_byref_a_0 *a = __cself->a; // bound by ref
+    __Block_byref_b_1 *b = __cself->b; // bound by ref
+
+    (a->__forwarding->a) = 20;
+    (b->__forwarding->b) = 30;
+
+    printf("a = %d, b = %d\n",(a->__forwarding->a), (b->__forwarding->b));
+}
+
+static void __main_block_copy_0(struct __main_block_impl_0*dst, struct __main_block_impl_0*src) {_Block_object_assign((void*)&dst->a, (void*)src->a, 8/*BLOCK_FIELD_IS_BYREF*/);_Block_object_assign((void*)&dst->b, (void*)src->b, 8/*BLOCK_FIELD_IS_BYREF*/);}
+
+static void __main_block_dispose_0(struct __main_block_impl_0*src) {_Block_object_dispose((void*)src->a, 8/*BLOCK_FIELD_IS_BYREF*/);_Block_object_dispose((void*)src->b, 8/*BLOCK_FIELD_IS_BYREF*/);}
+
+static struct __main_block_desc_0 {
+    size_t reserved;
+    size_t Block_size;
+    void (*copy)(struct __main_block_impl_0*, struct __main_block_impl_0*);
+    void (*dispose)(struct __main_block_impl_0*);
+} __main_block_desc_0_DATA = { 0, sizeof(struct __main_block_impl_0), __main_block_copy_0, __main_block_dispose_0};
+
+int main() {
+    __attribute__((__blocks__(byref))) __Block_byref_a_0 a = {(void*)0,(__Block_byref_a_0 *)&a, 0, sizeof(__Block_byref_a_0), 10};
+    __Block_byref_b_1 b = {(void*)0,(__Block_byref_b_1 *)&b, 0, sizeof(__Block_byref_b_1), 20};
+
+    void (*myLocalBlock)(void) = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA, (__Block_byref_a_0 *)&a, (__Block_byref_b_1 *)&b, 570425344));
+    ((void (*)(__block_impl *))((__block_impl *)myLocalBlock)->FuncPtr)((__block_impl *)myLocalBlock);
+
+    return 0;
+}
+```
+
+- 可以看到，只是加上了一个 `__block`，代码量就增加了很多。
+
+- 我们从 `__main_block_impl_0` 开始说起：
+
+```objective-c
+struct __main_block_impl_0 {
+    struct __block_impl impl;
+    struct __main_block_desc_0* Desc;
+    __Block_byref_a_0 *a; // by ref
+    __Block_byref_b_1 *b; // by ref
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, __Block_byref_a_0 *_a, __Block_byref_b_1 *_b, int flags=0) : a(_a->__forwarding), b(_b->__forwarding) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
+};
+```
+
+- 我们在 `__main_block_impl_0`结构体中可以看到： 原 OC 代码中，被 `__block`修饰的局部变量 `__block int a`、`__block int b`分别变成了 `__Block_byref_a_0`、`__Block_byref_b_1`类型的结构体指针 `a`、结构体指针 `b`。这里使用结构体指针 `a`、结构体指针 `b`说明 `_Block_byref_a_0`、`__Block_byref_b_1`类型的结构体并不在 `__main_block_impl_0`结构体中，而只是通过指针的形式引用，这是为了可以在多个不同的 Block 中使用 `__block`修饰的变量。
+
+- `__Block_byref_a_0`、`__Block_byref_b_1` 类型的结构体声明如下：
+
+```objective-c
+struct __Block_byref_a_0 {
+    void *__isa;
+    __Block_byref_a_0 *__forwarding;
+    int __flags;
+    int __size;
+    int a;
+};
+
+struct __Block_byref_b_1 {
+    void *__isa;
+    __Block_byref_b_1 *__forwarding;
+    int __flags;
+    int __size;
+    int b;
+};
+```
+
+- 拿第一个 `__Block_byref_a_0`结构体定义来说明，`__Block_byref_a_0`有 5 个部分：
+
+  1. `__isa`：标识对象类的 `isa`实例变量
+  2. `__forwarding`：传入变量的地址
+  3. `__flags`：标志位
+  4. `__size`：结构体大小
+
+  5. `a`：存放实变量 `a`实际的值，相当于原局部变量的成员变量（和之前不加__block修饰符的时候一致）。
+
+- 再来看一下 `main()`函数中，`__block int a`、`__block int b`的赋值情况。
+
+```objective-c
+__Block_byref_a_0 a = {
+    (void*)0,
+    (__Block_byref_a_0 *)&a, 
+    0, 
+    sizeof(__Block_byref_a_0), 
+    10
+};
+
+__Block_byref_b_1 b = {
+    0,
+    &b, 
+    0, 
+    sizeof(__Block_byref_b_1), 
+    20
+};
+```
+
+- 还是拿第一个`__Block_byref_a_0 a`的赋值来说明。
+
+- 可以看到 `__isa`指针值传空，`__forwarding`指向了局部变量 `a`本身的地址，`__flags`分配了 0，`__size`为结构体的大小，`a`赋值为 10。下图用来说明 `__forwarding`指针的指向情况。
+
+![__forwarding指向](https://tva1.sinaimg.cn/large/006y8mN6ly1g7cqcq5jzvj314m0fy0wm.jpg)
+
+- 这下，我们知道 `__forwarding` 其实就是局部变量 `a` 本身的地址，那么我们就可以通过 `__forwarding` 指针来访问局部变量，同时也能对其进行修改了。
+
+- 来看一下 Block 主体部分对应的 `__main_block_func_0` 结构体来验证一下。
+
+```objective-c
+static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
+    __Block_byref_a_0 *a = __cself->a; // bound by ref
+    __Block_byref_b_1 *b = __cself->b; // bound by ref
+
+    (a->__forwarding->a) = 20;
+    (b->__forwarding->b) = 30;
+
+    printf("a = %d, b = %d\n",(a->__forwarding->a), (b->__forwarding->b));
+}
+```
+
+可以看到 `(a->__forwarding->a) = 20;`和 `(b->__forwarding->b) = 30;`是通过指针取值的方式来改变了局部变量的值。这也就解释了通过 `__block`来修饰的变量，在 Block 的主体部分中改变值的原理其实是：通过**『指针传递』**的方式。
+
 ##### __block修饰对象
 
+```objective-c
+- (void)useBlockQualifierChangeLocalVariables {
+    __block Person *person = [[Person alloc] init];
+
+    void(^block)(void) = ^ {
+      person = [[Person alloc] init];//修改person创建的地址
+      NSLog(@"person is %@", person);
+    };
+    block();
+}
+```
+
+- 把上述代码转换成C++
+
+```objective-c
+static void __Block_byref_id_object_copy_131(void *dst, void *src) {
+	 _Block_object_assign((char*)dst + 40, *(void * *) ((char*)src + 40), 131);
+}
+static void __Block_byref_id_object_dispose_131(void *src) {
+	 _Block_object_dispose(*(void * *) ((char*)src + 40), 131);
+}
+
+struct __Block_byref_person_0 {
+    void *__isa;
+    __Block_byref_person_0 *__forwarding;
+    int __flags;
+    int __size;
+    void (*__Block_byref_id_object_copy)(void*, void*);
+    void (*__Block_byref_id_object_dispose)(void*);
+    Person *person;
+};
+
+struct __main_block_impl_0 {
+    struct __block_impl impl;
+    struct __main_block_desc_0* Desc;
+    __Block_byref_person_0 *person; // by ref
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, 	    __Block_byref_person_0 *_person, int flags=0) : person(_person->__forwarding) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
+};
+
+static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
+    __Block_byref_person_0 *person = __cself->person; // bound by ref
+
+    (person->__forwarding->person) = ((Person *(*)(id, SEL))(void *)objc_msgSend)((id)((Person *(*)(id, SEL))(void *)objc_msgSend)((id)objc_getClass("Person"), sel_registerName("alloc")), sel_registerName("init"));
+    NSLog((NSString *)&__NSConstantStringImpl__var_folders_bp_sg6dyc5957s2j2v4l6z9k4dm0000gn_T_main_1f2ea2_mi_0, (person->__forwarding->person));
+}
+
+static void __main_block_copy_0(struct __main_block_impl_0*dst, struct __main_block_impl_0*src) {
+    _Block_object_assign((void*)&dst->person, (void*)src->person, 8/*BLOCK_FIELD_IS_BYREF*/);
+}
+
+static void __main_block_dispose_0(struct __main_block_impl_0*src) {
+    _Block_object_dispose((void*)src->person, 8/*BLOCK_FIELD_IS_BYREF*/);
+}
+
+static struct __main_block_desc_0 {
+    size_t reserved;
+    size_t Block_size;
+    void (*copy)(struct __main_block_impl_0*, struct __main_block_impl_0*);
+    void (*dispose)(struct __main_block_impl_0*);
+} __main_block_desc_0_DATA = { 0, sizeof(struct __main_block_impl_0), __main_block_copy_0, __main_block_dispose_0};
+
+int main(int argc, const char * argv[]) {
+    /* @autoreleasepool */ { __AtAutoreleasePool __autoreleasepool; 
+       __attribute__((__blocks__(byref))) 
+       __Block_byref_person_0 person = {
+           (void*)0,
+           (__Block_byref_person_0 *)&person,
+           33554432,
+           sizeof(__Block_byref_person_0), 
+         	 __Block_byref_id_object_copy_131,
+           __Block_byref_id_object_dispose_131,
+           ((Person *(*)(id, SEL))(void *)objc_msgSend)((id)((Person *(*)(id, SEL))(void *)objc_msgSend)((id)objc_getClass("Person"),
+           sel_registerName("alloc")),
+           sel_registerName("init"))
+       };
+
+       void(*block)(void) = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA, (__Block_byref_person_0 *)&person, 570425344));
+        ((void (*)(__block_impl *))((__block_impl *)block)->FuncPtr)((__block_impl *)block);
+    }
+    return 0;
+}
+```
+
+- 我们先从 `__main_block_impl_0` 开始说起：
+
+```objective-c
+struct __main_block_impl_0 {
+    struct __block_impl impl;
+    struct __main_block_desc_0* Desc;
+    __Block_byref_person_0 *person; // by ref
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, __Block_byref_person_0 *_person, int flags=0) : person(_person->__forwarding) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
+};
+```
+
+- 我们在 `__main_block_impl_0` 结构体中可以看到： 原 `OC `代码中，被 `__block` 修饰的`person`变成了 `__Block_byref_person_0`类型结构体指针
+-  `__Block_byref_person_0`类型结构体声明和该结构体初始化如下：
+
+```objective-c
+struct __Block_byref_person_0 {
+    void *__isa;
+    __Block_byref_person_0 *__forwarding;
+    int __flags;
+    int __size;
+    void (*__Block_byref_id_object_copy)(void*, void*);
+    void (*__Block_byref_id_object_dispose)(void*);
+    Person *person;
+};
+
+__Block_byref_person_0 person = {
+           (void*)0,
+           (__Block_byref_person_0 *)&person,
+           33554432,
+           sizeof(__Block_byref_person_0), 
+         	 __Block_byref_id_object_copy_131,
+           __Block_byref_id_object_dispose_131,
+           ((Person *(*)(id, SEL))(void *)objc_msgSend)((id)((Person *(*)(id, SEL))(void *)objc_msgSend)((id)objc_getClass("Person"),
+           sel_registerName("alloc")),
+           sel_registerName("init"))
+       };
+
+
+```
+
+- 我们发现，在`_Block_byref_person_0`中多了两个函数，通过其初始化可以知道这两个函数分别是`__Block_byref_id_object_copy_131`和`__Block_byref_id_object_dispose_131`这两个函数
+
+```objective-c
+static void __Block_byref_id_object_copy_131(void *dst, void *src) {
+	 _Block_object_assign((char*)dst + 40, *(void * *) ((char*)src + 40), 131);
+}
+static void __Block_byref_id_object_dispose_131(void *src) {
+	 _Block_object_dispose(*(void * *) ((char*)src + 40), 131);
+}
+```
+
+- 这两个函数其实和`_main_block_copy_0`和`_main_block_dispose_0`一样，最终都是调用`_Block_object_assign`和`_Block_object_dispose`这两个函数。那么这里为什么都加上了40呢？我们分析一下`_Block_byref_person_0`的结构：
+
+```objective-c
+struct __Block_byref_person_0 {
+    void *__isa;    //指针，8字节
+    __Block_byref_person_0 *__forwarding; //指针，8字节
+    int __flags; //int型，4字节
+    int __size;  //int型，4字节
+    void (*__Block_byref_id_object_copy)(void*, void*);//指针型，8字节
+    void (*__Block_byref_id_object_dispose)(void*);//指针型，8字节
+    Person *person;
+};
+```
+
+- 这样一来，`_Block_byref_person_0`的地址和`person`指针的地址就相差40字节，所以+40的目的就是找到`person`指针。
+
 #### 更改特殊区域变量值
+
+- C语言中有几种特殊区域的变量，允许 Block 改写值，具体如下：
+  - 静态局部变量
+  - 静态全局变量
+  - 全局变量
+
+下面我们通过代码来看看这种情况
+
+- OC代码
+
+```objective-c
+int global_val = 10; // 全局变量
+static int static_global_val = 20; // 静态全局变量
+
+int main() {
+    static int static_val = 30; // 静态局部变量
+
+    void (^myLocalBlock)(void) = ^{
+        global_val *= 1;
+        static_global_val *= 2;
+        static_val *= 3;
+
+        printf("static_val = %d, static_global_val = %d, global_val = %d\n",static_val, static_global_val, static_val);
+    };
+
+    myLocalBlock();
+
+    return 0;
+}
+```
+
+- C++代码
+
+```objective-c
+int global_val = 10;
+static int static_global_val = 20;
+
+struct __main_block_impl_0 {
+    struct __block_impl impl;
+    struct __main_block_desc_0* Desc;
+    int *static_val;
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int *_static_val, int flags=0) : static_val(_static_val) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
+};
+
+static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
+    int *static_val = __cself->static_val; // bound by copy
+    global_val *= 1;
+    static_global_val *= 2;
+    (*static_val) *= 3;
+
+    printf("static_val = %d, static_global_val = %d, global_val = %d\n",(*static_val), static_global_val, (*static_val));
+}
+
+static struct __main_block_desc_0 {
+    size_t reserved;
+    size_t Block_size;
+} __main_block_desc_0_DATA = { 0, sizeof(struct __main_block_impl_0)};
+
+int main() {
+    static int static_val = 30;
+
+    void (*myLocalBlock)(void) = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA, &static_val));
+    ((void (*)(__block_impl *))((__block_impl *)myLocalBlock)->FuncPtr)((__block_impl *)myLocalBlock);
+
+    return 0;
+
+}
+```
+
+- 从中可以看到：
+  - 在 `__main_block_impl_0` 结构体中，将静态局部变量 `static_val` 以指针的形式添加为成员变量，而静态全局变量 `static_global_val`、全局变量 `global_val` 并没有添加为成员变量。
+
+```objective-c
+int global_val = 10;
+static int static_global_val = 20;
+
+struct __main_block_impl_0 {
+    struct __block_impl impl;
+    struct __main_block_desc_0* Desc;
+    int *static_val;
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int *_static_val, int flags=0) : static_val(_static_val) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
+};
+```
+
+- 再来看一下 Block 主体部分对应的 `__main_block_func_0` 结构体部分。静态全局变量 `static_global_val`、全局变量 `global_val` 是直接访问的，而静态局部变量 `static_val` 则是通过『指针传递』的方式进行访问和赋值。
+
+```objective-c
+static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
+    int *static_val = __cself->static_val; // bound by copy
+    global_val *= 1;
+    static_global_val *= 2;
+    (*static_val) *= 3;
+
+    printf("static_val = %d, static_global_val = %d, global_val = %d\n",(*static_val), static_global_val, (*static_val));
+}
+```
+
+- 静态变量的这种方法似乎也适用于自动变量的访问，但我们为什么没有这么做呢？
+
+  实际上，在由 Block 语法生成的值 Block 上，可以存有超过其变量域的被截获对象的自动变量。变量作用域结束的同时，原来的自动变量被废弃，因此 Block 中超过变量作用域而存在的变量同静态变量一样，将不能通过指针访问原来的自动变量。
+
+- 最后我们用一张图来总结一下这一节所学
+
+![block捕获变量类型](https://tva1.sinaimg.cn/large/006y8mN6ly1g7d7hpphsxj314g0hwgp5.jpg)
+
+## `__block`变量内存管理
+
+- 我们先回顾一下之前的一些捕获变量或对象是如何管理内存的。
+
+- **注：下面 “干预” 是指不用程序员手动管理，其实本质还是要系统管理内存的分配与释放。**
+  - `auto` 局部基本类型变量，因为是值传递，内存是跟随 Block，不用干预；
+  - `static` 局部基本类型变量，指针传递，由于分配在静态区，故不用干预；
+  - 全局变量，存储在数据区，不用多说，不用干预；
+  - 局部对象变量，如果在栈上，不用干预。但 `Block` 在拷贝到堆的时候，对其 `retain`，在 `Block` 对象销毁时，对其 `release`；
+
+在这里，`__block` 变量呢？
+
+**注意点就是：__block 变量在转换后封装成了一个新对象，内存管理会多出一层。**
+
+### 基本类型的Desc
+
+上述 `age` 是基本类型，其转换后的结构体为：
+
+```objective-c
+struct __Block_byref_age_0 {
+    void *__isa;	
+    __Block_byref_age_0 *__forwarding;
+    int __flags;
+    int __size;
+    int age;
+};
+```
+
+而 `Block` 中的 `Desc` 如下：
+
+```objective-c
+static struct __main_block_desc_0 {
+  size_t reserved;
+  size_t Block_size;
+  void (*copy)(struct __main_block_impl_0*, struct __main_block_impl_0*);
+  void (*dispose)(struct __main_block_impl_0*);
+} __main_block_desc_0_DATA = { 0, sizeof(struct __main_block_impl_0), __main_block_copy_0, __main_block_dispose_0};
+
+//下面两个方法是Block内: 内存管理相关函数
+static void __main_block_copy_0(struct __main_block_impl_0*dst, struct __main_block_impl_0*src) {
+    _Block_object_assign((void*)&dst->age, (void*)src->age, 8/*BLOCK_FIELD_IS_BYREF*/);
+    _Block_object_assign((void*)&dst->person, (void*)src->person, 8/*BLOCK_FIELD_IS_BYREF*/);
+}
+
+static void __main_block_dispose_0(struct __main_block_impl_0*src) {
+    _Block_object_dispose((void*)src->age, 8/*BLOCK_FIELD_IS_BYREF*/);
+    _Block_object_dispose((void*)src->person, 8/*BLOCK_FIELD_IS_BYREF*/);
+}
+```
+
+针对基本类型，以 `age` 类型为例：
+
+- `__Block_byref_age_0` 对象同样是在 `Block对象`从栈上拷贝到堆上，进行 `retain`；
+- 当 `Block对象`销毁时，对`__Block_byref_age_0` 进行 `release`；
+- `__Block_byref_age_0` 内 `age`，由于是基本类型，是不用进行内存手动干预的。
+
+### 对象类型的Desc
+
+下面看`__block` 对象类型的转换：
+
+```objective-c
+struct __Block_byref_person_1 {
+    void *__isa;		//地址0---占用8字节
+    __Block_byref_person_1 *__forwarding;	//地址8-16---占用8字节
+    int __flags;		//地址16-20---占用4字节
+    int __size;			//地址20-24---占用8字节
+    void (*__Block_byref_id_object_copy)(void*, void*);	//地址24-32---占用8字节
+    void (*__Block_byref_id_object_dispose)(void*);     //地址32-40---占用8字节
+    BFPerson *person; 	//地址40-48---占用8字节
+};
+```
+
+- 因为捕获的本身是一个对象类型，所以该对象类型还需要进行内存的干预。
+
+- 这里有两个熟悉的函数，即用于管理对象 auto 变量时，我们见过，用于管理对象 auto 的内存：
+
+```objective-c
+void (*__Block_byref_id_object_copy)(void*, void*);
+void (*__Block_byref_id_object_dispose)(void*);
+```
+
+- 那么这两个函数对应的实现，我们也找出来：
+
+#### 初始化__block对象
+
+下面针对转换来转换去的细节做了删减，方便阅读：
+
+```objective-c
+struct __Block_byref_person_1 person = {
+    0,	//isa
+    &person,	//__forwarding
+    33554432, 	//__flags
+    sizeof(__Block_byref_person_1),		//__size
+    __Block_byref_id_object_copy_131,  //(*__Block_byref_id_object_copy)
+    __Block_byref_id_object_dispose_131,// (*__Block_byref_id_object_dispose)
+    (objc_msgSend)((objc_msgSend)(objc_getClass("BFPerson"), sel_registerName("alloc")), sel_registerName("init"))
+};
+
+//注意此处+40字节
+static void __Block_byref_id_object_copy_131(void *dst, void *src
+{
+		_Block_object_assign((char*)dst + 40, *(void * *) ((char*)src + 40), 131);
+}
+static void __Block_byref_id_object_dispose_131(void *src) 
+{
+    _Block_object_dispose(*(void * *) ((char*)src + 40), 131);
+}
+```
+
+- 我们注意观察，在`__Block_byref_id_object_copy_131` 和`__Block_byref_id_object_dispose_131` 函数中，都会偏移 40 字节，我们再看`__block BFPerson` 对象转换后的`__Block_byref_person_1` 结构体发现，其 40 字节偏移处就是原本的 `BFPerson *person` 对象。
+
+#### 对象类型的内存管理
+
+以 `BFPerson *person`，在`__block` 修饰后，转换为：`__Block_byref_person_1` 对象：
+
+- `__Block_byref_person_1` 对象同样是在 `Block对象`从栈上拷贝到堆上，进行 `retain`；
+  - 当`__Block_byref_person_1` 进行 `retain` 同时，会将 `person` 对象进行 retain
+- 当 `Block对象`销毁时，对`__Block_byref_person_1` 进行 `release`
+  - 当`__Block_byref_person_1` 对象 `release` 时，会将 `person` 对象 `release` 
+
+#### 与auto对象变量的区别
+
+![auto对象变量与_block变量对比](https://tva1.sinaimg.cn/large/006y8mN6ly1g7d88ehhu0j31680nm0zi.jpg)
+
+### 从栈到堆
+
+Block 从栈复制到堆时，__block 变量产生的影响如下：
+
+| __block 变量的配置存储域 | Block 从栈复制到堆的影响      |
+| :----------------------- | :---------------------------- |
+| 栈                       | 从栈复制到堆，并被 Block 持有 |
+| 堆                       | 被 Block 持有                 |
+
+#### Block从栈拷贝到堆
+
+![block从栈拷贝到堆](https://tva1.sinaimg.cn/large/006y8mN6ly1g7d89t0pp6j316k0hqn2p.jpg)
+
+当有多个 Block 对象，持有同一个__block 变量。
+
+- 当其中任何 Block 对象复制到堆上，__block 变量就会复制到堆上。
+- 后续，其他 Block 对象复制到堆上，__block 对象引用计数会增加。
+- Block 复制到堆上的对象，持有__block 对象。
+
+#### Block销毁
+
+![Block销毁](https://tva1.sinaimg.cn/large/006y8mN6ly1g7d8b4ku98j312g0k0wks.jpg)
+
+#### 总结
+
+![__block变量的内存管理](https://tva1.sinaimg.cn/large/006y8mN6ly1g7d8bepd3bj316e0ka452.jpg)
+
+## 更多细节
+
+### __block捕获变量存放在哪？
+
+```objective-c
+__block int age = 20;
+__block BFPerson *person = [[BFPerson alloc] init];
+
+void(^block)(void) = ^ {
+    age = 30;
+    person = [[BFPerson alloc] init];
+    NSLog(@"malloc address: %p %p", &age, person);
+    NSLog(@"malloc age is %d", age);
+    NSLog(@"person is %@", person);
+};
+block();
+NSLog(@"stack address: %p %p", &age, person);
+NSLog(@"stack age is %d", age);
+
+//输出结果
+Block-test[12866:2303749] malloc address: 0x100610bf8 0x100612ff0
+Block-test[12866:2303749] malloc age is 30
+Block-test[12866:2303749] person is <Person: 0x100612ff0>
+Block-test[12866:2303749] stack address: 0x100610bf8 0x100612ff0
+Block-test[12866:2303749] stack age is 30
+```
+
+可以看到，不管是 `age` 还是 `person`，均在堆空间。
+
+其实，本质上，将 `Block` 从栈拷贝到堆，也会将`__block` 对象一并拷贝到堆，如下图：
+
+![block从栈到堆细节](https://tva1.sinaimg.cn/large/006y8mN6ly1g7d8febw82j30ry0lqdjq.jpg)
+
+### 对象与__block变量的区别
+
+```objective-c
+__block BFPerson *blockPerson = [[BFPerson alloc] init];
+BFPerson *objectPerson = [[BFPerson alloc] init];
+void(^block)(void) = ^ {
+    NSLog(@"person is %@ %@", blockPerson, objectPerson);
+};
+```
+
+转换后：
+
+```objective-c
+//Block对象
+struct __main_block_impl_0 {
+	struct __block_impl impl;
+	struct __main_block_desc_0* Desc;
+  	BFPerson *objectPerson;			//objectPerson对象，捕获
+  	__Block_byref_blockPerson_0 *blockPerson; // blockPerson封装后的对象，内部捕获blockPerson
+};
+
+//__block blockPerson封装后的对象
+struct __Block_byref_blockPerson_0 {
+  	void *__isa;
+	__Block_byref_blockPerson_0 *__forwarding;
+ 	void (*__Block_byref_id_object_copy)(void*, void*);
+ 	void (*__Block_byref_id_object_dispose)(void*);
+ 	BFPerson *blockPerson;
+};
+
+//两种对象不同的处理方式
+static void __main_block_copy_0(struct __main_block_impl_0*dst, struct __main_block_impl_0*src) {
+    _Block_object_assign((void*)&dst->blockPerson, (void*)src->blockPerson, 8/*BLOCK_FIELD_IS_BYREF*/);
+    _Block_object_assign((void*)&dst->objectPerson, (void*)src->objectPerson, 3/*BLOCK_FIELD_IS_OBJECT*/);
+}
+
+//__Block_byref_blockPerson_0内部对__block blockPerson的处理
+static void __Block_byref_id_object_copy_131(void *dst, void *src) {
+	_Block_object_assign((char*)dst + 40, *(void * *) ((char*)src + 40), 131);
+}
+```
+
+从上面可以得出
+
+![__block变量和对象的区别](https://tva1.sinaimg.cn/large/006y8mN6ly1g7d8h9uus6j31ii0syai4.jpg)
