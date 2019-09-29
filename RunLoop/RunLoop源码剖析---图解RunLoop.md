@@ -367,7 +367,7 @@ CF_EXPORT CFRunLoopRef _CFRunLoopGet0(pthread_t t) {
   2. `CFRunLoopModeRef`**运行模式，模式下对应多个处理源,具体有哪些模式我会在RunLoop和Mode这一节仔细讲解**
   3. `CFRunLoopSourceRef`**是事件产生的地方**。`Source`有两个版本：`Source0` 和 `Source1`。
      1. `Source0`**触摸事件处理**
-     2. `Source1`**基于Port的线程见通信**
+     2. `Source1`**基于Port的线程间通信**
   4. `CFRunLoopTimerRef`**NSTimer的运用**
   5. `CFRunLoopObserverRef`**用于监听RunLoop的状态，UI刷新，自动释放池**
 
@@ -837,8 +837,8 @@ SInt32 CFRunLoopRunSpecific(CFRunLoopRef rl, CFStringRef modeName, CFTimeInterva
 	if (currentMode->_observerMask & kCFRunLoopExit ) 
         // 12. 通知 Observers: 退出RunLoop                                               
         __CFRunLoopDoObservers(rl, currentMode, kCFRunLoopExit);
-        __CFRunLoopModeUnlock(currentMode);
-        __CFRunLoopPopPerRunData(rl, previousPerRun);
+    __CFRunLoopModeUnlock(currentMode);
+    __CFRunLoopPopPerRunData(rl, previousPerRun);
 		rl->_currentMode = previousMode;
     __CFRunLoopUnlock(rl);
     return result;

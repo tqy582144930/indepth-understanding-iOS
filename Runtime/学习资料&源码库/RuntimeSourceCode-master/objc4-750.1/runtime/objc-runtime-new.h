@@ -1406,7 +1406,6 @@ struct category_t {
     struct method_list_t *classMethods;//category中所有添加的类方法的列表
     struct protocol_list_t *protocols;//category实现的所有协议的列表
     struct property_list_t *instanceProperties;//category中添加的所有属性
-    // Fields below this point are not always present on disk.
     struct property_list_t *_classProperties;
 
     method_list_t *methodsForMeta(bool isMeta) {
