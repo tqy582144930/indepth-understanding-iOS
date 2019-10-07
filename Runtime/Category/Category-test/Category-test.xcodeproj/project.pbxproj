@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4F0833412343ABB900E36E60 /* BFPerson.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F0833402343ABB900E36E60 /* BFPerson.m */; };
+		4F2A50622344523F000F81C4 /* BFPerson+Work.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F2A50612344523F000F81C4 /* BFPerson+Work.m */; };
+		4F2A506523445254000F81C4 /* BFPerson+Study.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F2A506423445254000F81C4 /* BFPerson+Study.m */; };
+		4F4936662345A2DF008BB31B /* Person.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F4936652345A2DF008BB31B /* Person.m */; };
 		4F72054B2341F614000C75DB /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F72054A2341F614000C75DB /* AppDelegate.m */; };
 		4F72054E2341F614000C75DB /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F72054D2341F614000C75DB /* SceneDelegate.m */; };
 		4F7205512341F614000C75DB /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F7205502341F614000C75DB /* ViewController.m */; };
@@ -16,9 +20,6 @@
 		4F72055C2341F614000C75DB /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F72055B2341F614000C75DB /* main.m */; };
 		4F7205662341F614000C75DB /* Category_testTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F7205652341F614000C75DB /* Category_testTests.m */; };
 		4F7205712341F615000C75DB /* Category_testUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F7205702341F615000C75DB /* Category_testUITests.m */; };
-		4F720583234235C9000C75DB /* Person.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F720582234235C9000C75DB /* Person.m */; };
-		4F7205A4234236A0000C75DB /* Person+Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F7205A3234236A0000C75DB /* Person+Test.m */; };
-		4F7205A7234236AD000C75DB /* Person+Test2.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F7205A6234236AD000C75DB /* Person+Test2.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,6 +40,14 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		4F08333F2343ABB900E36E60 /* BFPerson.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BFPerson.h; sourceTree = "<group>"; };
+		4F0833402343ABB900E36E60 /* BFPerson.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BFPerson.m; sourceTree = "<group>"; };
+		4F2A50602344523F000F81C4 /* BFPerson+Work.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "BFPerson+Work.h"; sourceTree = "<group>"; };
+		4F2A50612344523F000F81C4 /* BFPerson+Work.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "BFPerson+Work.m"; sourceTree = "<group>"; };
+		4F2A506323445254000F81C4 /* BFPerson+Study.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "BFPerson+Study.h"; sourceTree = "<group>"; };
+		4F2A506423445254000F81C4 /* BFPerson+Study.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "BFPerson+Study.m"; sourceTree = "<group>"; };
+		4F4936642345A2DF008BB31B /* Person.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Person.h; sourceTree = "<group>"; };
+		4F4936652345A2DF008BB31B /* Person.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Person.m; sourceTree = "<group>"; };
 		4F7205462341F614000C75DB /* Category-test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Category-test.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F7205492341F614000C75DB /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		4F72054A2341F614000C75DB /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -57,12 +66,6 @@
 		4F72056C2341F615000C75DB /* Category-testUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Category-testUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F7205702341F615000C75DB /* Category_testUITests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Category_testUITests.m; sourceTree = "<group>"; };
 		4F7205722341F615000C75DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		4F720581234235C9000C75DB /* Person.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Person.h; sourceTree = "<group>"; };
-		4F720582234235C9000C75DB /* Person.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Person.m; sourceTree = "<group>"; };
-		4F7205A2234236A0000C75DB /* Person+Test.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Person+Test.h"; sourceTree = "<group>"; };
-		4F7205A3234236A0000C75DB /* Person+Test.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "Person+Test.m"; sourceTree = "<group>"; };
-		4F7205A5234236AD000C75DB /* Person+Test2.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Person+Test2.h"; sourceTree = "<group>"; };
-		4F7205A6234236AD000C75DB /* Person+Test2.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "Person+Test2.m"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -124,12 +127,14 @@
 				4F7205572341F614000C75DB /* LaunchScreen.storyboard */,
 				4F72055A2341F614000C75DB /* Info.plist */,
 				4F72055B2341F614000C75DB /* main.m */,
-				4F720581234235C9000C75DB /* Person.h */,
-				4F720582234235C9000C75DB /* Person.m */,
-				4F7205A2234236A0000C75DB /* Person+Test.h */,
-				4F7205A3234236A0000C75DB /* Person+Test.m */,
-				4F7205A5234236AD000C75DB /* Person+Test2.h */,
-				4F7205A6234236AD000C75DB /* Person+Test2.m */,
+				4F4936642345A2DF008BB31B /* Person.h */,
+				4F4936652345A2DF008BB31B /* Person.m */,
+				4F08333F2343ABB900E36E60 /* BFPerson.h */,
+				4F0833402343ABB900E36E60 /* BFPerson.m */,
+				4F2A50602344523F000F81C4 /* BFPerson+Work.h */,
+				4F2A50612344523F000F81C4 /* BFPerson+Work.m */,
+				4F2A506323445254000F81C4 /* BFPerson+Study.h */,
+				4F2A506423445254000F81C4 /* BFPerson+Study.m */,
 			);
 			path = "Category-test";
 			sourceTree = "<group>";
@@ -282,13 +287,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4F7205A4234236A0000C75DB /* Person+Test.m in Sources */,
 				4F7205512341F614000C75DB /* ViewController.m in Sources */,
+				4F0833412343ABB900E36E60 /* BFPerson.m in Sources */,
+				4F4936662345A2DF008BB31B /* Person.m in Sources */,
 				4F72054B2341F614000C75DB /* AppDelegate.m in Sources */,
-				4F7205A7234236AD000C75DB /* Person+Test2.m in Sources */,
-				4F720583234235C9000C75DB /* Person.m in Sources */,
 				4F72055C2341F614000C75DB /* main.m in Sources */,
 				4F72054E2341F614000C75DB /* SceneDelegate.m in Sources */,
+				4F2A50622344523F000F81C4 /* BFPerson+Work.m in Sources */,
+				4F2A506523445254000F81C4 /* BFPerson+Study.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

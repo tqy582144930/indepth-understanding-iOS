@@ -2,14 +2,19 @@
 //  Person.m
 //  Category-test
 //
-//  Created by _祀梦 on 2019/9/30.
+//  Created by _祀梦 on 2019/10/3.
 //  Copyright © 2019 涂强尧. All rights reserved.
 //
 
 #import "Person.h"
 
 @implementation Person
-- (void)run {
-    NSLog(@"Person - run");
-}
+
 @end
+
+@implementation Person (MyAdditon)
+
+
+
+@end
+

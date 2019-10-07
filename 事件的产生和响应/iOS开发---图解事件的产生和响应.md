@@ -78,7 +78,7 @@
 
 1. 当用户的手指触摸屏幕的某一个`view`的时候，此时就发生了触摸事件，产生触摸事件后，系统会将该事件加入到一个由`UIApplication`管理的事件队列中,为什么是队列而不是栈？因为队列的特点是FIFO，即先进先出，先产生的事件先处理才符合常理，所以把事件添加到队列。
 2. `UIApplication`会从事件队列中取出最前面的事件，并将事件分发下去以便处理，通常，先发送事件给应用程序的主窗口`（keyWindow）`。
-3. 然后由主窗口决定如何将事件交给最合适的响应者(UIResponder)来处理
+3. 然后由主窗口决定如何将事件交给最合适的响应者`(UIResponder)`来处理
 
 ### 事件的传递
 
@@ -91,7 +91,7 @@
 1. `userInteractionEnabled`属性为`YES`，该属性表示允许控件同用户交互。
 2. `Hidden`属性为NO。控件都看不见，自然不存在触摸
 3. `opacity`属性值0 ～0.01。
-4. 触摸点在这个UIView的范围内。
+4. 触摸点在这个`UIView`的范围内。
 
 ##### 事件传递的流程
 
@@ -253,7 +253,7 @@
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event;//开始触摸
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event;//手指移动
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event;//结束触摸
-- (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event;://触摸终端
+- (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event;://触摸中断
 ```
 
 2. 如果有实现那么就由此`View`响应，如果没有实现（即不能处理当前事件），那么事件将会沿着响应者链`(Responder Chain)`进行传递，直到遇到能处理该事件的响应者`(Responsder Object)`。

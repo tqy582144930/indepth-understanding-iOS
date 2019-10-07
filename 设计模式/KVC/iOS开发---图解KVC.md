@@ -69,7 +69,7 @@
 
 ![基于getter取值](http://ww1.sinaimg.cn/large/006tNc79ly1g5ou9gjqooj31tj0oegsg.jpg)
 
-1. 通过`getter`方法搜索实例，按照`get<Key>`, `<key>`, `is<Key>`, `_<key>的顺序查找`getter`方法。如果发现符合的方法，就调用对应的方法并拿着结果跳转到第五步。否则，就继续到下一步。
+1. 通过`getter`方法搜索实例，按照`get<Key>`, `<key>`, `is<Key>`, `_<key>`的顺序查找`getter`方法。如果发现符合的方法，就调用对应的方法并拿着结果跳转到第五步。否则，就继续到下一步。
 
 2. 如果没有找到简单的`getter`方法，则搜索其匹配模式的方法`countOf<Key>`、`objectIn<Key>AtIndex:`、`<key>AtIndexes:`。
 

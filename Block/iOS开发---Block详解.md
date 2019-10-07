@@ -423,7 +423,7 @@ struct __main_block_impl_0 *myBlock = &temp;
    }
    ```
 
-2. 第二个参数：`__main_block_desc_0_DATA`：`__main_block_desc_0_DATA`包含该 Block 的相关信息。
+2. 第二个参数：`__main_block_desc_0_DATA`：`__main_block_desc_0_DATA`包含该Block 的相关信息。
    我们再来结合之前的 `__main_block_impl_0`结构体定义。
 
    - `__main_block_impl_0`结构体（Block 结构体）可以表述为：
@@ -505,7 +505,7 @@ int main(int argc, char * argv[]) {
 
 #### Block的三种类型
 
-- **Block有三种类型，分别是NSGlobalBlock,MallocBlock,NSStackBlock。**
+- **Block有三种类型，分别是NSGlobalBlock,NSMallocBlock,NSStackBlock。**
   这三种类型的`Block`对象的存储区域如下：
 
 | 类                                      | 对象的存储域            |
@@ -600,8 +600,8 @@ int main(int argc, char * argv[]) {
 
 | __block 变量的配置存储区域 |   Block 从栈复制到堆时的影响    |
 | :------------------------: | :-----------------------------: |
-|            堆区            | 从栈复制到堆，并被 Block 所持有 |
-|            栈区            |         被 Block 所持有         |
+|            栈区            | 从栈复制到堆，并被 Block 所持有 |
+|            堆区            |         被 Block 所持有         |
 
 当然，如果不再有 `Block` 引用该 `__block`变量，那么 `__block`变量也会被废除。
 
@@ -665,6 +665,7 @@ struct __main_block_impl_0 {
         Desc = desc;
     }
 };
+
 static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
     int a = __cself->a; // bound by copy
     int b = __cself->b; // bound by copy
@@ -1007,6 +1008,7 @@ struct __main_block_impl_0 {
         Desc = desc;
     }
 };
+
 static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
     Person *person = __cself->person; // bound by copy
 
