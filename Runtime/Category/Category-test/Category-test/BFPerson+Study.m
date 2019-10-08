@@ -14,4 +14,8 @@
 - (void)study {
     NSLog(@"study");
 }
+
++ (void)studyLession:(NSString *)les {
+    NSLog(@"studyLession");
+}
 @end

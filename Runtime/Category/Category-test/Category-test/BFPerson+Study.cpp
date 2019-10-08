@@ -106,7 +106,8 @@ struct __AtAutoreleasePool {
 };
 
 #define __OFFSETOFIVAR__(TYPE, MEMBER) ((long long) &((TYPE *)0)->MEMBER)
-static __NSConstantStringImpl __NSConstantStringImpl__var_folders_bp_sg6dyc5957s2j2v4l6z9k4dm0000gn_T_BFPerson_Study_481f84_mi_0 __attribute__ ((section ("__DATA, __cfstring"))) = {__CFConstantStringClassReference,0x000007c8,"study",5};
+static __NSConstantStringImpl __NSConstantStringImpl__var_folders_bp_sg6dyc5957s2j2v4l6z9k4dm0000gn_T_BFPerson_Study_97eff0_mi_0 __attribute__ ((section ("__DATA, __cfstring"))) = {__CFConstantStringClassReference,0x000007c8,"study",5};
+static __NSConstantStringImpl __NSConstantStringImpl__var_folders_bp_sg6dyc5957s2j2v4l6z9k4dm0000gn_T_BFPerson_Study_97eff0_mi_1 __attribute__ ((section ("__DATA, __cfstring"))) = {__CFConstantStringClassReference,0x000007c8,"studyLession",12};
 
 
 
@@ -98316,7 +98317,12 @@ struct BFPerson_IMPL {
 // @implementation BFPerson (Study)
 
 static void _I_BFPerson_Study_study(BFPerson * self, SEL _cmd) {
-    NSLog((NSString *)&__NSConstantStringImpl__var_folders_bp_sg6dyc5957s2j2v4l6z9k4dm0000gn_T_BFPerson_Study_481f84_mi_0);
+    NSLog((NSString *)&__NSConstantStringImpl__var_folders_bp_sg6dyc5957s2j2v4l6z9k4dm0000gn_T_BFPerson_Study_97eff0_mi_0);
+}
+
+
+static void _C_BFPerson_Study_studyLession_(Class self, SEL _cmd, NSString * _Nonnull les) {
+    NSLog((NSString *)&__NSConstantStringImpl__var_folders_bp_sg6dyc5957s2j2v4l6z9k4dm0000gn_T_BFPerson_Study_97eff0_mi_1);
 }
 // @end
 
@@ -98398,6 +98404,16 @@ static struct /*_method_list_t*/ {
 	{{(struct objc_selector *)"study", "v16@0:8", (void *)_I_BFPerson_Study_study}}
 };
 
+static struct /*_method_list_t*/ {
+	unsigned int entsize;  // sizeof(struct _objc_method)
+	unsigned int method_count;
+	struct _objc_method method_list[1];
+} _OBJC_$_CATEGORY_CLASS_METHODS_BFPerson_$_Study __attribute__ ((used, section ("__DATA,__objc_const"))) = {
+	sizeof(_objc_method),
+	1,
+	{{(struct objc_selector *)"studyLession:", "v24@0:8@16", (void *)_C_BFPerson_Study_studyLession_}}
+};
+
 static struct /*_prop_list_t*/ {
 	unsigned int entsize;  // sizeof(struct _prop_t)
 	unsigned int count_of_properties;
@@ -98416,13 +98432,14 @@ static struct _category_t _OBJC_$_CATEGORY_BFPerson_$_Study __attribute__ ((used
 	"BFPerson",
 	0, // &OBJC_CLASS_$_BFPerson,
 	(const struct _method_list_t *)&_OBJC_$_CATEGORY_INSTANCE_METHODS_BFPerson_$_Study,
-	0,
+	(const struct _method_list_t *)&_OBJC_$_CATEGORY_CLASS_METHODS_BFPerson_$_Study,
 	0,
 	(const struct _prop_list_t *)&_OBJC_$_PROP_LIST_BFPerson_$_Study,
 };
 static void OBJC_CATEGORY_SETUP_$_BFPerson_$_Study(void ) {
 	_OBJC_$_CATEGORY_BFPerson_$_Study.cls = &OBJC_CLASS_$_BFPerson;
 }
+
 #pragma section(".objc_inithooks$B", long, read, write)
 __declspec(allocate(".objc_inithooks$B")) static void *OBJC_CATEGORY_SETUP[] = {
 	(void *)&OBJC_CATEGORY_SETUP_$_BFPerson_$_Study,
