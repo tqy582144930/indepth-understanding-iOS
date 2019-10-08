@@ -1,4 +1,21 @@
-[TOC]
+
+
+   * [Runtime源码剖析---图解Category](#runtime源码剖析---图解category)
+      * [什么是Category？](#什么是category)
+         * [extension](#extension)
+         * [category 与 extension 的区别](#category-与-extension-的区别)
+      * [Category的实质](#category的实质)
+         * [category_t 结构体](#category_t-结构体)
+         * [分类如何存储在类对象中](#分类如何存储在类对象中)
+         * [category运行期](#category运行期)
+         * [分类在运行期做了什么](#分类在运行期做了什么)
+         * [运行流程](#运行流程)
+      * [load与initialize的区别](#load与initialize的区别)
+         * [load](#load)
+         * [initialize](#initialize)
+      * [关联对象](#关联对象)
+         * [如何关联对象](#如何关联对象)
+         * [关联对象的实现原理](#关联对象的实现原理)
 
 # Runtime源码剖析---图解Category
 
