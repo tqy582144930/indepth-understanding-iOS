@@ -17,7 +17,6 @@ NS_ASSUME_NONNULL_BEGIN
 @interface Person (MyAdditon)
 @property (nonatomic, copy)NSString *name;
 
-- (void)printName;
 
 @end
 NS_ASSUME_NONNULL_END

@@ -154,7 +154,7 @@ namespace objc_references_support {
   
     // ObjcAssociation就是关联对象类
     class ObjcAssociation {
-        uintptr_t _policy;
+        uintptr_t _policy;//策略
         // 值
         id _value;
     public:

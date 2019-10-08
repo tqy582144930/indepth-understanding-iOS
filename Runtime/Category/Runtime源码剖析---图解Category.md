@@ -1170,3 +1170,453 @@ void callInitialize(Class cls)
 
 ## 关联对象
 
+### 如何关联对象
+
+- 使用`RunTime`给系统的类添加属性，首先需要了解对象与属性的关系。我们通过之前的学习知道，对象一开始初始化的时候其属性为`nil`，给属性赋值其实就是让属性指向一块存储内容的内存，使这个对象的属性跟这块内存产生一种关联。
+
+- 那么如果想动态的添加属性，其实就是动态的产生某种关联就好了。而想要给系统的类添加属性，只能通过分类。
+
+- 我们可以使用`@property`给分类添加属性
+
+```objective-c
+@property(nonatomic,strong)NSString *name;
+```
+
+> **虽然在分类中可以写@property添加属性，但是不会自动生成私有属性，也不会生成set,get方法的实现，只会生成set,get的声明，需要我们自己去实现。**
+
+- RunTime提供了动态添加属性和获得属性的方法。
+
+```objective-c
+-(void)setName:(NSString *)name
+{
+    objc_setAssociatedObject(self, @"name",name, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+-(NSString *)name
+{
+    return objc_getAssociatedObject(self, @"name");    
+}
+```
+
+1. 动态添加属性
+
+```objective-c
+objc_setAssociatedObject(id object, const void *key, id value, objc_AssociationPolicy policy);
+```
+
+参数一：**id object**: 给哪个对象添加属性，这里要给自己添加属性，用self。
+参数二：**void \* == id key**: 属性名，根据key获取关联对象的属性的值，在**objc_getAssociatedObject**中通过次key获得属性的值并返回。
+参数三：**id value**: 关联的值，也就是set方法传入的值给属性去保存。
+参数四：**objc_AssociationPolicy policy**: 策略，属性以什么形式保存。
+有以下几种
+
+```objective-c
+typedef OBJC_ENUM(uintptr_t, objc_AssociationPolicy) {
+    OBJC_ASSOCIATION_ASSIGN = 0,  // 指定一个弱引用相关联的对象
+    OBJC_ASSOCIATION_RETAIN_NONATOMIC = 1, // 指定相关对象的强引用，非原子性
+    OBJC_ASSOCIATION_COPY_NONATOMIC = 3,  // 指定相关的对象被复制，非原子性
+    OBJC_ASSOCIATION_RETAIN = 01401,  // 指定相关对象的强引用，原子性
+    OBJC_ASSOCIATION_COPY = 01403     // 指定相关的对象被复制，原子性   
+};
+```
+
+2. 获得属性
+
+```objective-c
+objc_getAssociatedObject(id object, const void *key);
+```
+
+参数一：**id object** : 获取哪个对象里面的关联的属性。
+参数二：**void \* == id key** : 什么属性，与**objc_setAssociatedObject**中的key相对应，即通过key值取出value。
+
+3. 移除所有关联对象
+
+```objective-c
+- (void)removeAssociatedObjects
+{
+    // 移除所有关联对象
+    objc_removeAssociatedObjects(self);
+}
+```
+
+可以看出关联对象的使用非常简单，接下来我们来探寻关联对象的底层原理
+
+### 关联对象的实现原理
+
+- 实现关联对象技术的核心对象有
+
+1. AssociationsManager
+2. AssociationsHashMap
+3. ObjectAssociationMap
+4. ObjcAssociation
+   其中Map同我们平时使用的字典类似。通过key-value一一对应存值。
+
+- 首先来到`runtime`源码，首先找到`objc_setAssociatedObject`函数，看一下其实现
+
+```objective-c
+// 设置关联对象的方法
+void objc_setAssociatedObject(id object, const void *key, id value, objc_AssociationPolicy policy) {
+    _object_set_associative_reference(object, (void *)key, value, policy);
+}
+```
+
+我们看到其实内部调用的是`_object_set_associative_reference`函数，我们来到`_object_set_associative_reference`函数中
+
+- _object_set_associative_reference函数
+
+```objective-c
+// 该方法完成了设置关联对象的操作
+void _object_set_associative_reference(id object, void *key, id value, uintptr_t policy) {
+    // retain the new value (if any) outside the lock.
+    // 初始化空的ObjcAssociation(关联对象)
+    ObjcAssociation old_association(0, nil);
+    id new_value = value ? acquireValue(value, policy) : nil;
+    {
+        // 初始化一个manager
+        AssociationsManager manager;
+        AssociationsHashMap &associations(manager.associations());
+        // 获取对象的DISGUISE值，作为AssociationsHashMap的key
+        disguised_ptr_t disguised_object = DISGUISE(object);
+        if (new_value) {
+            // value有值，不为nil
+            // break any existing association.
+            // AssociationsHashMap::iterator 类型的迭代器
+            AssociationsHashMap::iterator i = associations.find(disguised_object);
+            if (i != associations.end()) {
+                // secondary table exists
+                // 获取到ObjectAssociationMap(key是外部传来的key，value是关联对象类ObjcAssociation)
+                ObjectAssociationMap *refs = i->second;
+                // ObjectAssociationMap::iterator 类型的迭代器
+                ObjectAssociationMap::iterator j = refs->find(key);
+                if (j != refs->end()) {
+                    // 原来该key对应的有关联对象
+                    // 将原关联对象的值存起来，并且赋新值
+                    old_association = j->second;
+                    j->second = ObjcAssociation(policy, new_value);
+                } else {
+                    // 无该key对应的关联对象，直接赋值即可
+                    // ObjcAssociation(policy, new_value)提供了这样的构造函数
+                    (*refs)[key] = ObjcAssociation(policy, new_value);
+                }
+            } else {
+                // create the new association (first time).
+                // 执行到这里，说明该对象是第一次添加关联对象
+                // 初始化ObjectAssociationMap
+                ObjectAssociationMap *refs = new ObjectAssociationMap;
+                associations[disguised_object] = refs;
+                // 赋值
+                (*refs)[key] = ObjcAssociation(policy, new_value);
+                // 设置该对象的有关联对象，调用的是setHasAssociatedObjects()方法
+                object->setHasAssociatedObjects();
+            }
+        } else {
+            // setting the association to nil breaks the association.
+            // value无值，也就是释放一个key对应的关联对象
+            AssociationsHashMap::iterator i = associations.find(disguised_object);
+            if (i !=  associations.end()) {
+                ObjectAssociationMap *refs = i->second;
+                ObjectAssociationMap::iterator j = refs->find(key);
+                if (j != refs->end()) {
+                    old_association = j->second;
+                    // 调用erase()方法删除对应的关联对象
+                    refs->erase(j);
+                }
+            }
+        }
+    }
+    // release the old value (outside of the lock).
+    // 释放旧的关联对象
+    if (old_association.hasValue()) ReleaseValue()(old_association);
+}
+```
+
+这个函数的实现看起来非常复杂，都是C++的语法，对于不了解C++的人来说非常困难，不过没关系，即便我们看不懂上面的代码，通过下面的分析，我们也能明白关联对象的原理：
+
+首先我们来分析一下我上面提到的那几个核心对象
+
+- 我们点进`AssociationsManager`查看其结构：
+
+```c++
+class AssociationsManager {
+    // AssociationsManager中只有一个变量AssociationsHashMap
+    static AssociationsHashMap *_map;
+public:
+    // 构造函数中加锁
+    AssociationsManager()   { AssociationsManagerLock.lock(); }
+    // 析构函数中释放锁
+    ~AssociationsManager()  { AssociationsManagerLock.unlock(); }
+    // 构造函数、析构函数中加锁、释放锁的操作，保证了AssociationsManager是线程安全的
+    
+    AssociationsHashMap &associations() {
+        // AssociationsHashMap 的实现可以理解成单例对象
+        if (_map == NULL)
+            _map = new AssociationsHashMap();
+        return *_map;
+    }
+};
+```
+
+- 我们来看一下`AssociationsHashMap`内部的源码
+
+```c++
+// AssociationsHashMap是字典，key是对象的disguised_ptr_t值，value是ObjectAssociationMap
+class AssociationsHashMap : public unordered_map<disguised_ptr_t, ObjectAssociationMap *, DisguisedPointerHash, DisguisedPointerEqual, AssociationsHashMapAllocator> {
+  public:
+  void *operator new(size_t n) { return ::malloc(n); }
+  void operator delete(void *ptr) { ::free(ptr); }
+};
+```
+
+通过`AssociationsHashMap`内部源码我们发现`AssociationsHashMap`继承自`unordered_map`首先来看一下`unordered_map`内的源码
+
+```c++
+template <class _Key, class _Tp, class _Hash = hash<_Key>, class _Pred = equal_to<_Key>,
+          class _Alloc = allocator<pair<const _Key, _Tp> > >
+class _LIBCPP_TEMPLATE_VIS unordered_map
+{
+public:
+    // types
+    typedef _Key                                           key_type;
+    typedef _Tp                                            mapped_type;
+    typedef _Hash                                          hasher;
+    typedef _Pred                                          key_equal;
+    typedef _Alloc                                         allocator_type;
+    typedef pair<const key_type, mapped_type>              value_type;
+    typedef value_type&                                    reference;
+    typedef const value_type&                              const_reference;
+    static_assert((is_same<value_type, typename allocator_type::value_type>::value),
+                  "Invalid allocator::value_type");
+    static_assert(sizeof(__diagnose_unordered_container_requirements<_Key, _Hash, _Pred>(0)), "");
+
+private:
+    .......
+}
+```
+
+从`unordered_map`源码中我们可以看出**_Key**和**_Tp**也就是前两个参数对应着`map`中的`Key`和`Value`，那么对照上面`AssociationsHashMap`内源码发现**_Key**中传入的是**disguised_ptr_t**，**_Tp**中传入的值则为**ObjectAssociationMap***。
+
+- 接着我们来到ObjectAssociationMap中
+
+```c++
+// ObjectAssociationMap是字典，key是从外面传过来的key，例如@selector(hello),value是关联对象，也就是
+    // ObjectAssociation
+class ObjectAssociationMap : public std::map<void *, ObjcAssociation, ObjectPointerLess, ObjectAssociationMapAllocator> {
+  public:
+  void *operator new(size_t n) { return ::malloc(n); }
+  void operator delete(void *ptr) { ::free(ptr); }
+};
+```
+
+我们发现`ObjectAssociationMap`中同样以`key、Value`的方式存储着**ObjcAssociation**。
+
+- 接着我们来到ObjcAssociation中
+
+```c++
+// ObjcAssociation就是关联对象类
+class ObjcAssociation {
+  uintptr_t _policy;//策略
+  // 值
+  id _value;
+  public:
+  // 构造函数
+  ObjcAssociation(uintptr_t policy, id value) : _policy(policy), _value(value) {}
+  // 默认构造函数，参数分别为0和nil
+  ObjcAssociation() : _policy(0), _value(nil) {}
+
+  uintptr_t policy() const { return _policy; }
+  id value() const { return _value; }
+
+  bool hasValue() { return _value != nil; }
+};
+```
+
+我们发现`ObjcAssociation`存储着**_policy**、**_value**，而这两个值我们可以发现正是我们调用**objc_setAssociatedObject**函数传入的值，也就是说我们在调用**objc_setAssociatedObject**函数中传入的`value和policy`这两个值最终是存储在**ObjcAssociation**中的。
+
+- 下面我们用一张图来解释他们之间的关系
+
+![关联对象的结构体](https://tva1.sinaimg.cn/large/006y8mN6ly1g7r9pjdlxnj31740nsafs.jpg)
+
+- 这个结构有啥巧妙之处？
+  1. 一个`objc`对象不光有一个属性需要关联时，比如说要关联`name`和`age`这两个属性，我们就以`objc`对象作为`disguised_ptr_t`，然后value是`ObjectAssociationMap`这个字典类型，在这个字典类型中，分别使用`@"name"`和`@"age"`作为`key`,传递进来的值和策略生成`ObjectAssociation`作为`value`。
+  2. 如果有多个对象进行关联时，我们只需要在`AssociationHashMap`中创造更多的键值对就可以解决这个问题。
+  3. **关联对象的值它不是存储在自己的实例对象的结构中，而是维护了一个全局的结构AssociationManager**
+-  下面我们再重新回到_object_set_associative_reference函数实现中
+
+```objective-c
+// 该方法完成了设置关联对象的操作
+void _object_set_associative_reference(id object, void *key, id value, uintptr_t policy) {
+    // retain the new value (if any) outside the lock.
+    // 初始化空的ObjcAssociation(关联对象)
+    ObjcAssociation old_association(0, nil);
+    id new_value = value ? acquireValue(value, policy) : nil;
+    {
+        // 初始化一个manager
+        AssociationsManager manager;
+        AssociationsHashMap &associations(manager.associations());
+        // 获取对象的DISGUISE值，作为AssociationsHashMap的key
+        disguised_ptr_t disguised_object = DISGUISE(object);
+        if (new_value) {
+            // value有值，不为nil
+            // AssociationsHashMap::iterator 类型的迭代器
+            AssociationsHashMap::iterator i = associations.find(disguised_object);
+            if (i != associations.end()) {
+                // 获取到ObjectAssociationMap(key是外部传来的key，value是关联对象类ObjcAssociation)
+                ObjectAssociationMap *refs = i->second;
+                // 在ObjectAssociationMap寻找key对应的ObjcAssociation
+                ObjectAssociationMap::iterator j = refs->find(key);
+                if (j != refs->end()) {
+                    // 原来该key对应的有关联对象
+                    // 将旧值保存在old_association，并且赋新值
+                    old_association = j->second;
+                    j->second = ObjcAssociation(policy, new_value);
+                } else {
+                    // 无该key对应的关联对象，直接赋值即可
+                    // ObjcAssociation(policy, new_value)提供了这样的构造函数
+                    (*refs)[key] = ObjcAssociation(policy, new_value);
+                }
+            } else {
+                // 执行到这里，说明该对象是第一次添加关联对象
+                // 初始化ObjectAssociationMap
+                ObjectAssociationMap *refs = new ObjectAssociationMap;
+                associations[disguised_object] = refs;
+                // 赋值
+                (*refs)[key] = ObjcAssociation(policy, new_value);
+                // 设置该对象的有关联对象，调用的是setHasAssociatedObjects()方法
+                object->setHasAssociatedObjects();
+            }
+        } else {
+            // value无值，也就是释放一个key对应的关联对象
+            AssociationsHashMap::iterator i = associations.find(disguised_object);
+            if (i !=  associations.end()) {
+                ObjectAssociationMap *refs = i->second;
+                ObjectAssociationMap::iterator j = refs->find(key);
+                if (j != refs->end()) {
+                    old_association = j->second;
+                    // 调用erase()方法删除对应的关联对象
+                    refs->erase(j);
+                }
+            }
+        }
+    }
+    // 释放旧的关联对象
+    if (old_association.hasValue()) ReleaseValue()(old_association);
+}
+```
+
+- 首先根据我们传入的`value`经过`acquireValue`函数处理获取`new_value`。`acquireValue`函数内部其实是通过对策略的判断返回不同的值
+
+```c++
+// 根据policy的值，对value进行retain或者copy
+static id acquireValue(id value, uintptr_t policy) {
+    switch (policy & 0xFF) {
+    case OBJC_ASSOCIATION_SETTER_RETAIN:
+        return objc_retain(value);
+    case OBJC_ASSOCIATION_SETTER_COPY:
+        return ((id(*)(id, SEL))objc_msgSend)(value, SEL_copy);
+    }
+    return value;
+}
+```
+
+- 之后创建`AssociationsManager manager`;以及拿到`manager`内部的`AssociationsHashMap`即**associations**。
+  之后我们看到了我们传入的第一个参数`object`
+  `object`经过`DISGUISE`函数被转化为了`disguised_ptr_t`类型的**disguised_object**。
+
+```c++
+typedef uintptr_t disguised_ptr_t;
+inline disguised_ptr_t DISGUISE(id value) { return ~uintptr_t(value); }
+inline id UNDISGUISE(disguised_ptr_t dptr) { return id(~dptr); }
+```
+
+`DISGUISE`函数其实仅仅对`object`做了位运算
+
+- 接着我们来看看objc_getAssociatedObject函数
+
+```c++
+// 获取关联对象的方法
+id objc_getAssociatedObject(id object, const void *key) {
+    return _object_get_associative_reference(object, (void *)key);
+}
+```
+
+- objc_getAssociatedObject内部调用的是_object_get_associative_reference
+
+```c++
+// 获取关联对象
+id _object_get_associative_reference(id object, void *key) {
+    id value = nil;
+    uintptr_t policy = OBJC_ASSOCIATION_ASSIGN;
+    {
+        AssociationsManager manager;
+        // 获取到manager中的AssociationsHashMap
+        AssociationsHashMap &associations(manager.associations());
+        // 获取对象的DISGUISE值
+        disguised_ptr_t disguised_object = DISGUISE(object);
+        AssociationsHashMap::iterator i = associations.find(disguised_object);
+        if (i != associations.end()) {
+            // 获取ObjectAssociationMap
+            ObjectAssociationMap *refs = i->second;
+            ObjectAssociationMap::iterator j = refs->find(key);
+            if (j != refs->end()) {
+                // 获取到关联对象ObjcAssociation
+                ObjcAssociation &entry = j->second;
+                // 获取到value
+                value = entry.value();
+                policy = entry.policy();
+                if (policy & OBJC_ASSOCIATION_GETTER_RETAIN) {
+                    objc_retain(value);
+                }
+            }
+        }
+    }
+    if (value && (policy & OBJC_ASSOCIATION_GETTER_AUTORELEASE)) {
+        objc_autorelease(value);
+    }
+    // 返回关联对像的值
+    return value;
+}
+```
+
+- objc_removeAssociatedObjects函数
+
+```c++
+// 移除对象object的所有关联对象
+void objc_removeAssociatedObjects(id object) 
+{
+    if (object && object->hasAssociatedObjects()) {
+        _object_remove_assocations(object);
+    }
+}
+```
+
+`objc_removeAssociatedObjects`函数内部调用的是`_object_remove_assocations`函数
+
+```objective-c
+// 移除对象object的所有关联对象
+void _object_remove_assocations(id object) {
+    // 声明了一个vector
+    vector< ObjcAssociation,ObjcAllocator<ObjcAssociation> > elements;
+    {
+        AssociationsManager manager;
+        AssociationsHashMap &associations(manager.associations());
+        // 如果map size为空，直接返回
+        if (associations.size() == 0) return;
+        // 获取对象的DISGUISE值
+        disguised_ptr_t disguised_object = DISGUISE(object);
+        AssociationsHashMap::iterator i = associations.find(disguised_object);
+        if (i != associations.end()) {
+            // copy all of the associations that need to be removed.
+            ObjectAssociationMap *refs = i->second;
+            for (ObjectAssociationMap::iterator j = refs->begin(), end = refs->end(); j != end; ++j) {
+                elements.push_back(j->second);
+            }
+            // remove the secondary table.
+            delete refs;
+            associations.erase(i);
+        }
+    }
+    // the calls to releaseValue() happen outside of the lock.
+    for_each(elements.begin(), elements.end(), ReleaseValue());
+}
+```
+
+上述源码可以看出`_object_remove_assocations`函数将`object`对象向对应的所有关联对象全部删除。

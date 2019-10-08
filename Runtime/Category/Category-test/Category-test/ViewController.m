@@ -7,9 +7,10 @@
 //
 
 #import "ViewController.h"
+#import "Person.h"
 
 @interface ViewController ()
-
+@property (nonatomic, strong) Person *objc;
 @end
 
 @implementation ViewController
@@ -17,6 +18,9 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
+    self.objc = [[Person alloc] init];
+    self.objc.name = @"tqy";
+    NSLog(@"%@", self.objc.name);
 }
 
 

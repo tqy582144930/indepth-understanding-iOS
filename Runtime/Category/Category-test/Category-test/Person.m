@@ -7,6 +7,7 @@
 //
 
 #import "Person.h"
+#import "objc/runtime.h"
 
 @implementation Person
 
@@ -14,7 +15,12 @@
 
 @implementation Person (MyAdditon)
 
+- (void)setName:(NSString *)name {
+    objc_setAssociatedObject(self, @"name", name, OBJC_ASSOCIATION_COPY_NONATOMIC);
+}
 
-
+- (NSString *)name {
+    return objc_getAssociatedObject(self, @"name");
+}
 @end
 
