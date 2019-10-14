@@ -1,4 +1,32 @@
-[TOC]
+
+   * [Runtime源码剖析---图解引用计数与weak](#runtime源码剖析---图解引用计数与weak)
+      * [前言](#前言)
+         * [什么是引用计数?](#什么是引用计数)
+         * [什么是循环引用？](#什么是循环引用)
+      * [引用计数](#引用计数)
+         * [引用计数的存储](#引用计数的存储)
+            * [isa指针中的引用计数](#isa指针中的引用计数)
+            * [Side Table里的引用计数](#side-table里的引用计数)
+         * [引用计数的管理](#引用计数的管理)
+            * [管理引用计数的方法](#管理引用计数的方法)
+            * [获取引用计数](#获取引用计数)
+               * [非ARC环境下](#非arc环境下)
+               * [ARC环境下](#arc环境下)
+            * [retain的实现](#retain的实现)
+            * [release的实现](#release的实现)
+            * [dealloc的实现](#dealloc的实现)
+      * [weak](#weak)
+         * [SideTables](#sidetables)
+         * [SideTable](#sidetable)
+            * [spinlock_t：自旋锁](#spinlock_t自旋锁)
+            * [RefcountMap：存放引用计数](#refcountmap存放引用计数)
+               * [RefcountMap工作逻辑](#refcountmap工作逻辑)
+            * [weak_table_t：维护weak指针](#weak_table_t维护weak指针)
+               * [weak_entry_t](#weak_entry_t)
+               * [weak_table_t 的工作逻辑](#weak_table_t-的工作逻辑)
+                  * [初始化weak指针](#初始化weak指针)
+                  * [weak指针置nil](#weak指针置nil)
+
 
 # Runtime源码剖析---图解引用计数与weak
 
