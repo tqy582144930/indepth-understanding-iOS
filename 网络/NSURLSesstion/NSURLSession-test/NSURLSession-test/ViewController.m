@@ -31,8 +31,10 @@
     //创建NSURLRequest请求
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
     
+    
     //创建NSURLSession对象
     NSURLSession *session = [NSURLSession sharedSession];
+    
     
     //创建下载任务，其中location为下载的临时文件路径
     NSURLSessionDownloadTask *downLoadTask = [session downloadTaskWithURL:url completionHandler:^(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error) {
