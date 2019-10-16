@@ -11,19 +11,21 @@
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
-       __block int age = 20;
-       __block Person *person = [[Person alloc] init];
+//       int age = 20;
+        __block Person *person = [[Person alloc] init];
+        NSLog(@"person = %@", person);
 
        void(^block)(void) = ^ {
-           age = 30;
-           person = [[Person alloc] init];
-           NSLog(@"malloc address: %p %p", &age, person);
-           NSLog(@"malloc age is %d", age);
+//           age = 30;
+//           person = [[Person alloc] init];
+//           NSLog(@"malloc address: %p %p", &age, person);
+//           NSLog(@"malloc age is %d", age);
+//           person.age = 30;
            NSLog(@"person is %@", person);
        };
        block();
-       NSLog(@"stack address: %p %p", &age, person);
-       NSLog(@"stack age is %d", age);
+//       NSLog(@"stack address: %p %p", &age, person);
+//       NSLog(@"stack age is %d", age);
     }
     return 0;
 }

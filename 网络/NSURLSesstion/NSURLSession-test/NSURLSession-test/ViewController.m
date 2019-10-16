@@ -30,7 +30,7 @@
     
     //创建NSURLRequest请求
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
-    
+
     
     //创建NSURLSession对象
     NSURLSession *session = [NSURLSession sharedSession];
