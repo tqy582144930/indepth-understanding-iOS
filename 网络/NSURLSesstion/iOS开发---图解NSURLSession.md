@@ -172,7 +172,54 @@ NSURLSessionDataTask * dataTask = [session dataTaskWithURL:[NSURL URLWithString:
    - (NSURLSessionDataTask *)dataTaskWithURL:(NSURL *)url completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
    ```
 
+   - 下面我们写一个简单的数据请求，通过Block方式
+
+   ```objective-c
+   // 快捷方式获得session对象
+   NSURLSession *session = [NSURLSession sharedSession];
+   NSURL *url = [NSURL URLWithString:@"http://www.daka.com/login?username=daka&pwd=123"];
+   // 通过URL初始化task,在block内部可以直接对返回的数据进行处理
+   NSURLSessionTask *task = [session dataTaskWithURL:url
+                                  completionHandler:^(NSData *data, NSURLResponse *response, NSError error) {
+       NSLog(@"%@", [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil]);
+   }];
    
+   // 启动任务
+   [task resume];
+   ```
+
+   - 通过代理的方式实现
+
+   ```objective-c
+   // 使用代理方法需要设置代理,但是session的delegate属性是只读的,要想设置代理只能通过这种方式创建session
+   NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]
+                                                         delegate:self
+                                                    delegateQueue:[[NSOperationQueue alloc] init]];
+   
+   // 创建任务(因为要使用代理方法,就不需要block方式的初始化了)
+   NSURLSessionDataTask *task = [session dataTaskWithRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"http://www.daka.com/login?userName=daka&pwd=123"]]];
+   
+   // 启动任务
+   [task resume];
+   
+   //对应的代理方法如下:
+   
+   // 1.接收到服务器的响应
+   - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveResponse:(NSURLResponse *)response completionHandler:(void (^)(NSURLSessionResponseDisposition))completionHandler {
+       // 允许处理服务器的响应，才会继续接收服务器返回的数据
+       completionHandler(NSURLSessionResponseAllow);
+   }
+   
+   // 2.接收到服务器的数据（可能调用多次）
+   - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveData:(NSData *)data {
+       // 处理每次接收的数据
+   }
+   
+   // 3.请求成功或者失败（如果失败，error有值）
+   - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error {
+       // 请求完成,成功或者失败的处理
+   }
+   ```
 
 2. NSURLSessionDownloadTask
 
@@ -196,7 +243,52 @@ NSURLSessionDataTask * dataTask = [session dataTaskWithURL:[NSURL URLWithString:
    - (NSURLSessionDownloadTask *)downloadTaskWithResumeData:(NSData *)resumeData completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;
    ```
 
+   - 通过Block实现下载
+
+   ```objective-c
+   SURLSession *session = [NSURLSession sharedSession];
+   NSURL *url = [NSURL URLWithString:@"http://www.daka.com/resources/image/icon.png"] ;
+   NSURLSessionDownloadTask *task = [session downloadTaskWithURL:url completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
+       // location是沙盒中tmp文件夹下的一个临时url,文件下载后会存到这个位置,由于tmp中的文件随时可能被删除,所以我们需要自己需要把下载的文件挪到需要的地方
+       NSString *path = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:response.suggestedFilename];
+       // 剪切文件
+       [[NSFileManager defaultManager] moveItemAtURL:location toURL:[NSURL fileURLWithPath:path] error:nil];
+   }];
+       // 启动任务
+       [task resume];
+   ```
+
+   - 通过协议实现
+
+   ```objective-c
+   //创建下载路径
+   NSURL *url = [NSURL URLWithString:@"http://dldir1.qq.com/qqfile/QQforMac/QQ_V5.4.0.dmg"];
+   //创建NSURLSession对象，并设计代理方法。其中NSURLSessionConfiguration为默认配置
+   NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:[NSOperationQueue mainQueue]];
+   //创建任务
+   NSURLSessionDownloadTask *downLoadTask = [session downloadTaskWithURL:url];
+   [downLoadTask resume];
    
+   // 每次写入调用(会调用多次)
+   - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
+   // 可在这里通过已写入的长度和总长度算出下载进度
+   CGFloat progress = 1.0 * totalBytesWritten / totalBytesExpectedToWrite; NSLog(@"%f",progress);
+   }
+   
+   // 下载完成调用
+   - (void)URLSession:(NSURLSession *)session
+         downloadTask:(NSURLSessionDownloadTask *)downloadTask
+         didFinishDownloadingToURL:(NSURL *)location {
+       // location还是一个临时路径,需要自己挪到需要的路径(caches下面)
+       NSString *filePath = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:downloadTask.response.suggestedFilename];
+       [[NSFileManager defaultManager] moveItemAtURL:location toURL:[NSURL fileURLWithPath:filePath] error:nil];
+   }
+   
+   // 任务完成调用
+   - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error {
+   
+   }
+   ```
 
 3. NSURLSessionUploadTask
 
@@ -216,7 +308,96 @@ NSURLSessionDataTask * dataTask = [session dataTaskWithURL:[NSURL URLWithString:
    - (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromData:(NSData *)bodyData completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler; 
    ```
 
-   
+   - 这三种上传方式有什么区别
+     1. NSData：如果对象已经在内存里
+     2. File：如果对象在磁盘上，这样做有助于降低内存使用
+     3. Stream：通过流对象，你可以不用一次性将所有的流数据加载到内存中
+        不过使用Stream一定要实现`URLSession:task:needNewBodyStream:`，因为Session没办法在重新尝试发送Stream的时候找到数据源。
+   - 以数据流的方式上传：这种方式好处就是大小不受限制，上传需要服务器端脚本支持
+
+   ```objective-c
+   // 1.创建url  采用Apache本地服务器
+   NSString *urlString = @"http://localhost/upload.php"; urlString = [urlString stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLFragmentAllowedCharacterSet]];
+   // 2.创建请求
+   NSURL *url = [NSURL URLWithString:urlString]; 
+   // 文件上传使用post
+   NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url]; 
+   request.HTTPMethod = @"POST"; 
+   // 3.开始上传   request的body data将被忽略，而由fromData提供
+   [[[NSURLSession sharedSession] uploadTaskWithRequest:request fromData:[NSData dataWithContentsOfFile:@"/Users/userName/Desktop/IMG_0359.jpg"]     completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) { 
+     	if (error == nil) {
+           NSLog(@"upload success：%@",[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
+       } else {
+           NSLog(@"upload error:%@",error);
+       }
+   }] resume];
+   ```
+
+### NSURLSessionTask代理
+
+> NSURLSession相关的协议一共有四个，NSURLSessionDelegate, NSURLSessionTaskDelegate，NSURLSessionDownloadDelegate，NSURLSessionDataDelegate。（因为NSURLSessionUploadTask继承自NSURLSessionDataTask，因此NSURLSessionDataDelegate即为NSURLSessionUploadTask对应的代理协议。）在选择代理方式完成NSURLSessionTask时，会用到这些协议
+
+![NSURLSessionDelegate](https://tva1.sinaimg.cn/large/006y8mN6ly1g80i01fyauj30su0iggmu.jpg)
+
+- NSURLSessionDelegate
+
+  - 这个协议是session-level的，当这个session的生命周期发生改变时，会回调这些代理方法，还有当出现认证问题时也会回调这个协议的代理方法。主要API如下：
+
+  ```objective-c
+  //当session对象失效时会调用这个方法。
+  - (void)URLSession:(NSURLSession *)session didBecomeInvalidWithError:(nullable NSError *)error;
+  
+  //当发生session级别的认证挑战时会调用这个方法
+  - (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge
+                                               completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential * _Nullable credential))completionHandler;
+  //当session队列中的所有消息都分发完成时调用这个方法
+  - (void)URLSessionDidFinishEventsForBackgroundURLSession:(NSURLSession *)session;
+  ```
+
+- NSURLSessionTaskDelegate
+
+  - 这是一个task-level的协议，它可以处理所以task的回调，包括data task，upload task，download task。这个协议方法主要处理的是所有task的一些公共的问题。其主要的API如下：
+
+  ```objective-c
+  //网络请求完成时调用
+  - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
+  //告诉委托远程服务器请求HTTP重定向。此方法仅适用于默认和临时会话中的任务。 后台会话中的任务会自动遵循重定向
+   - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task willPerformHTTPRedirection:(NSHTTPURLResponse *)response newRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURLRequest *))completionHandler;
+  //处理认证
+  - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential *credential))completionHandler;
+  //定期通知代理向服务器发送主体内容的进度。(上传进度)
+  - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didSendBodyData:(int64_t)bytesSent totalBytesSent:(int64_t)totalBytesSent totalBytesExpectedToSend:(int64_t)totalBytesExpectedToSend;
+  
+  ```
+
+- NSURLSessionDownloadDelegate
+
+  - 这是一个task-level的协议，专门用来处理NSURLSessionDownloadTask相关的回调。
+
+  ```objective-c
+  //这个方法是必须实现的，当下载完成的时候调用这个方法
+  - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didFinishDownloadingToURL:(NSURL *)location;
+  //继续已暂停的下载
+  - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didResumeAtOffset:(int64_t)fileOffset expectedTotalBytes:(int64_t)expectedTotalBytes;
+  //定期通知下载进度
+  - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite;
+  
+  ```
+
+- NSURLSessionDataDelegate
+
+  - 这是一个task-level的协议，用来处理NSURLSessionDataTask和NSURLSessionUploadTask相关的回调
+
+  ```objective-c
+  //当data task收到了来自服务器的响应头时会回调这个方法
+  - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveResponse:(NSURLResponse *)response completionHandler:(void (^)(NSURLSessionResponseDisposition disposition))completionHandler;
+  //当data task转变成了download task时会调用这个方法
+  - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didBecomeDownloadTask:(NSURLSessionDownloadTask *)downloadTask;
+  //这个方法会周期性的调用，data task每收到一部分数据就会调用一次 这个方法，把所有的数据拼接在一起就能获得完整的数据
+  - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveData:(NSData *)data;
+  //询问代理data task或upload task是否应该将响应存储在缓存中
+  - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask willCacheResponse:(NSCachedURLResponse *)proposedResponse completionHandler:(void (^)(NSCachedURLResponse *cachedResponse))completionHandler;
+  ```
 
 ## NSURLSession和NSURLConnection区别
 

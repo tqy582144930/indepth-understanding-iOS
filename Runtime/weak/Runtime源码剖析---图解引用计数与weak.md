@@ -772,7 +772,7 @@ template<typename LookupKeyT>
 1. 如果 c 对象销毁后将下标 2 的桶设置为空桶, 此时为 e 对象增加引用计数, 根据哈希算法查找到下标为 2 的桶时, 就会直接插入, 无法为已经在下标为 4 的桶中的 e 增加引用计数.
 2. 如果此时初始化了一个新的对象 f, 根据哈希算法查找到下标为 2 的桶时发现桶中放置了墓碑, 此时会记录下来下标 2. 接下来继续哈希算法查找位置, 查找到空桶时, 就证明表中没有对象 f, 此时 f 使用记录好的下标 2 的桶而不是查找到的空桶, 就可以利用到已经释放的位置.
 
-- 插入对象引用计数流程
+- 插入对象流程
 
 ```c++
 BucketT *InsertIntoBucketImpl(const KeyT &Key, BucketT *TheBucket) {
@@ -844,7 +844,7 @@ struct weak_entry_t {
             uintptr_t        max_hash_displacement;//最大哈希偏移值
         };
         struct {
-            //这是一个取名急哦啊内联引用的数组
+            //这是一个取名内联引用的数组
             weak_referrer_t  inline_referrers[WEAK_INLINE_COUNT];//宏定义的值是4
         };
     };
