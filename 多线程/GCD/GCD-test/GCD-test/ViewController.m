@@ -58,7 +58,7 @@
     dispatch_queue_t queue = dispatch_queue_create("net.GCD-test", DISPATCH_QUEUE_CONCURRENT);
     //同步执行
     dispatch_sync(queue, ^{
-        [NSThread sleepForTimeInterval:2];//模拟耗时操作
+        [NSThread sleepForTimeInterval:2];// 拟耗时操作
         NSLog(@"1---%@", [NSThread currentThread]);//打印当前线程
     });
     
