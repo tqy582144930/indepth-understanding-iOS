@@ -65,5 +65,3 @@
 ### 5.队列组：dispatch_group
 
 ### 6.信号量：dispatch_semaphore
-
-## GCD线程间的通信
