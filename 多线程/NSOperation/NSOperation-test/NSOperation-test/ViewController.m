@@ -37,11 +37,11 @@
 //    //调用addOperationWithBlock:将包含操作的blcok添加到队列中
 //    [self addOperationWithBlockToQueue];
     
-//    //设置MaxConcurrentOperationCount(最大并发操作数)
-//    [self setMaxConcurrentOperationCount];
+    //设置MaxConcurrentOperationCount(最大并发操作数)
+    [self setMaxConcurrentOperationCount];
     
-    //操作依赖
-    [self addDependency];
+//    //操作依赖
+//    [self addDependency];
     
 }
 
@@ -278,7 +278,7 @@ NSOperation-test[2762:588975] 4---<NSThread: 0x6000027d8140>{number = 6, name = 
 #pragma 设置MaxConcurrentOperationCount(最大并发操作数)
 - (void)setMaxConcurrentOperationCount {
     // 1.创建队列
-    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    NSOperationQueue *queue = [NSOperationQueue mainQueue];
     
     // 2.设置最大并发操作数
     queue.maxConcurrentOperationCount = 1;//串行队列
