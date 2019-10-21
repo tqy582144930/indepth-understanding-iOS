@@ -203,14 +203,14 @@ static void OBJC_CATEGORY_SETUP_$_BFPerson_$_Study(void ) {
 
 ### category运行期
 
-### 分类在运行期做了什么
+#### 分类在运行期做了什么
 
 - runtime 会加载某个类的所有 category 数据；
 - 将所有 category 的方法（对象方法、类方法）、属性、协议数据，合并到一个大数组中
   - 后面参与编译的 category 数据，会在合并数组的前面；
 - 将合并后的分类数据（方法、属性、协议），插入到类原来数据的前面；
 
-### 运行流程
+#### 运行流程
 
 - 首先来到`runtime`初始化函数
 

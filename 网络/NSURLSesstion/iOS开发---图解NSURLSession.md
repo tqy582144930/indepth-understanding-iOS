@@ -78,7 +78,7 @@ typedef NS_ENUM(NSUInteger, NSURLRequestCachePolicy)
 
 ### NSURLSession
 
-> NSURLSession由NSURLSessionConfiguration来配置，通过NSURLRequest创建出NSURLSessionTask进行网络会话
+> NSURLSession由NSURLSessionConfiguration来配置，通过NSURLSession创建出NSURLSessionTask进行网络会话
 
 - 我们可以使用NSURLSession的API来创建一个或多个session对象，每个session对象都管理着一组网络请求任务。
 
