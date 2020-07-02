@@ -996,7 +996,7 @@ storeWeak(id *location, objc_object *newObj)
 }
 ```
 
-- 如果weak指针有旧值，则需要在weak_table中处理掉旧值，就需要用到`weak_unregister_no_lock`方法
+- 如果weak 指针有旧值，则需要在weak_table中处理掉旧值，就需要用到`weak_unregister_no_lock`方法
 
 ```c++
 void

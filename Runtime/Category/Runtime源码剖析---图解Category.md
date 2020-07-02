@@ -161,7 +161,7 @@ static struct /*_method_list_t*/ {
 
 同上面对象方法列表一样，这个我们可以看出是类方法列表结构体`_OBJC_$_CATEGORY_CLASS_METHODS_BFPerson_$_Study`,同对象方法一样，同样可以看到我们实现的类方法`studyLession`
 
-- 接下来是属性方法列表
+- 接下来是属性列表
 
 ```objective-c
 static struct /*_prop_list_t*/ {
