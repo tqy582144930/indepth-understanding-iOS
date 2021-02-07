@@ -43,7 +43,7 @@
 //    [self groupWait];
 //    //添加删除任务
 //    [self groupEnterAndLeave];
-
+    [self test];
     
     
 }
@@ -431,6 +431,19 @@
         NSLog(@"3---%@",[NSThread currentThread]);      // 打印当前线程
         
         NSLog(@"group---end");
+    });
+}
+- (void)test {
+    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    dispatch_async(queue, ^(void) {
+        NSLog(@"a");
+    });
+    dispatch_sync(queue, ^(void) {
+        sleep(1);
+        NSLog(@"b");
+    });
+    dispatch_async(queue, ^(void) {
+        NSLog(@"c");
     });
 }
 @end

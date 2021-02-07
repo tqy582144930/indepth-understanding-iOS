@@ -10,4 +10,4 @@
 
 ## SDWebImageDownloader
 
-## SDWebImageDownloaderOperation
+## SDWebImageDownloaderOperationw
